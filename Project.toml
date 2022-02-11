@@ -1,0 +1,24 @@
+name = "NonLinearDynamicsCourse"
+uuid = "6762868a-e78a-451a-a6ea-484381d56062"
+authors = ["meguia <eguiamc@gmail.com> and contributors"]
+version = "0.1.0"
+
+[deps]
+BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
+Interact = "c601a237-2ae4-5e1e-952c-7a85b0c7eef1"
+IntervalRootFinding = "d2bf35a9-74e0-55ec-b149-d360ff49b807"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
