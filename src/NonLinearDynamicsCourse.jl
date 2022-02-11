@@ -1,6 +1,7 @@
 module NonLinearDynamicsCourse
 
     using Plots
+    using LinearAlgebra
     using DifferentialEquations
     using ForwardDiff
     using IntervalRootFinding

@@ -1,4 +1,9 @@
-using Plots, DifferentialEquations, ForwardDiff, IntervalRootFinding, StaticArrays
+using Plots
+using LinearAlgebra
+using DifferentialEquations
+using ForwardDiff
+using IntervalRootFinding
+using StaticArrays
 
 function plot_nullclines(f,p;xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=30,regions=true)
     xrange = xlims[2]-xlims[1]
