@@ -141,7 +141,7 @@ function plot_manifolds(f,f_jac,u0_array,p;tmax=30,delta=0.001,repulsor=false,xl
     plot_manifolds(p1,f,f_jac,u0_array,p;tmax=tmax,delta=delta,repulsor=repulsor,xlims=xlims,ylims=ylims,size=size)
 end
 
-function phase_portrait!(f,p;tmax=50,delta=0.001,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
+function phase_portrait(f,p;tmax=50,delta=0.001,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
     # Find fixedpoints in interval 
     function fsv((x,y))
         du = f(similar([x,y]),[x,y],p,0)
