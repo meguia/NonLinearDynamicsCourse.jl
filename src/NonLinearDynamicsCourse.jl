@@ -13,7 +13,8 @@ module NonLinearDynamicsCourse
             solve_plot_animated,
             classification_linear,
             plot_manifolds,
-            phase_portrait
+            phase_portrait,
+            solve_plot_forced
 
     include("DNL_utils.jl")
 

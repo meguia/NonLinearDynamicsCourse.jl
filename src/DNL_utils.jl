@@ -156,3 +156,28 @@ function phase_portrait(f,p;tmax=50,delta=0.001,xlims=[-1.0,1.0],ylims=[-1.0,1.0
     plot_manifolds(p1,f,f_jac,u0_arr,p;tmax=tmax,delta=delta,repulsor=true,xlims=xlims,ylims=ylims,size=size)
 end    
     
+function solve_plot_forced(f, u0, p, period; trans=0, npts=100,tmax=50,size=(900,400))
+    # Assume that the 3rd variable (z) is periodic and plot x,y as a function of z modulo period
+    # skip trans period of the forcing
+    sol = solve(ODEProblem(f,u0,(0.0,tmax),p))
+    period = 2*pi/p[3]
+    ncycles = Int(floor(tmax/period))
+    npts = Int(floor(max(npts,npts/p[3])))
+    n = ncycles*npts
+    xmin = minimum(getindex.(sol.u,1))
+    xmax = maximum(getindex.(sol.u,1))
+    ymin = minimum(getindex.(sol.u,2))
+    ymax = maximum(getindex.(sol.u,2))
+    p1 = plot(legend=false)
+    p2 = plot(legend=false)
+    c = cgrad([:gray,:gray])
+    for j = trans+1:ncycles
+        ts = range((j-1)*period,stop=j*period,length=npts+1)
+        plot!(p1,sol(ts,idxs=1),sol(ts,idxs=2),(0:npts)/npts,color=j)
+        scatter!(p1,[sol(ts[end],idxs=1)],[sol(ts[end],idxs=2)],[1],markersize=2,color=j)
+        scatter!(p1,[sol(ts[1],idxs=1)],[sol(ts[1],idxs=2)],[0],markersize=2,color=j,framestyle=:box)
+        plot!(p2,sol(ts,idxs=1),sol(ts,idxs=2),color=j)
+    end    
+    plot(p1,p2,layout=(1,2),size=size)
+end        
+
