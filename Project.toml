@@ -1,10 +1,7 @@
-authors = ["meguia <eguiamc@gmail.com> and contributors"]
 name = "NonLinearDynamicsCourse"
 uuid = "6762868a-e78a-451a-a6ea-484381d56062"
+authors = ["meguia <eguiamc@gmail.com> and contributors"]
 version = "0.1.0"
-
-[compat]
-julia = "1"
 
 [deps]
 BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
@@ -22,6 +19,10 @@ Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 WAV = "8149f6b0-98f6-5db9-b78f-408fbbb8ef88"
+
+[compat]
+Distances = "0.10"
+julia = "1"
 
 [extras]
 CPUSummary = "2a0fbf3d-bb9c-48f3-b0a9-814d99fd7ab9"
