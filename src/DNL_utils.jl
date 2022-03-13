@@ -4,6 +4,7 @@ using DifferentialEquations
 using ForwardDiff
 using IntervalRootFinding
 using StaticArrays
+using Distances
 
 function plot_nullclines(f,p;xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=30,regions=true)
     xrange = xlims[2]-xlims[1]
@@ -156,28 +157,82 @@ function phase_portrait(f,p;tmax=50,delta=0.001,xlims=[-1.0,1.0],ylims=[-1.0,1.0
     plot_manifolds(p1,f,f_jac,u0_arr,p;tmax=tmax,delta=delta,repulsor=true,xlims=xlims,ylims=ylims,size=size)
 end    
     
-function solve_plot_forced(f, u0, p, period; trans=0, npts=100,tmax=50,size=(900,400))
+function solve_plot_forced(f, u0, p, period; tcycles=0, npts=100,ncycles=10,size=(900,400),xlims=false,ylims=false)
     # Assume that the 3rd variable (z) is periodic and plot x,y as a function of z modulo period
     # skip trans period of the forcing
+    tmax = min(ncycles*period,10000)
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p))
-    period = 2*pi/p[3]
     ncycles = Int(floor(tmax/period))
-    npts = Int(floor(max(npts,npts/p[3])))
+    npts = Int(floor(max(npts,npts/p[4])))
     n = ncycles*npts
-    xmin = minimum(getindex.(sol.u,1))
-    xmax = maximum(getindex.(sol.u,1))
-    ymin = minimum(getindex.(sol.u,2))
-    ymax = maximum(getindex.(sol.u,2))
     p1 = plot(legend=false)
     p2 = plot(legend=false)
     c = cgrad([:gray,:gray])
-    for j = trans+1:ncycles
+    for j = tcycles+1:ncycles
         ts = range((j-1)*period,stop=j*period,length=npts+1)
         plot!(p1,sol(ts,idxs=1),sol(ts,idxs=2),(0:npts)/npts,color=j)
         scatter!(p1,[sol(ts[end],idxs=1)],[sol(ts[end],idxs=2)],[1],markersize=2,color=j)
         scatter!(p1,[sol(ts[1],idxs=1)],[sol(ts[1],idxs=2)],[0],markersize=2,color=j,framestyle=:box)
-        plot!(p2,sol(ts,idxs=1),sol(ts,idxs=2),color=j)
+        plot!(p2,sol(ts,idxs=1),sol(ts,idxs=2),color=j,linealpha=0.3)
+        scatter!(p2,[sol(ts[1],idxs=1)],[sol(ts[1],idxs=2)],markersize=2,color=j)
+    end    
+    if xlims isa Tuple
+        xlims!(p1,xlims)
+        xlims!(p2,xlims)
+    end    
+    if ylims isa Tuple
+        ylims!(p1,ylims)
+        ylims!(p2,ylims)
     end    
     plot(p1,p2,layout=(1,2),size=size)
 end        
 
+function poincare_forced(f, u0, p, period; tcycles=0, ncycles=10,size=(500,500),xlims=false,ylims=false)
+    # Assume that the 3rd variable (z) is periodic and plot x,y as a function of z modulo period
+    # skip trans period of the forcing
+    trans = solve(ODEProblem(f,u0,(0.0,tcycles*period),p))
+    u0=trans.u[end]
+    if period>1000
+        tmax=min(ncycles*period,10000)
+    else
+        tmax=ncycles*period
+    end    
+    tsave = period:period:ncycles*period
+    sol = solve(ODEProblem(f,u0,(0.0,tmax),p),saveat=tsave)
+    scatter(sol,vars=(1,2),legend=false,size=size,markersize=0.5,xlims=xlims,ylims=ylims)
+    if xlims isa Tuple
+        xlims!(xlims)
+    else
+        xmin = minimum(getindex.(vcat(trans.u,sol.u),1))
+        xmax = maximum(getindex.(vcat(trans.u,sol.u),1))
+        xrange=xmax-xmin
+        xlims!(xmin-0.1*xrange,xmax+0.1*xrange)
+    end    
+    if ylims isa Tuple
+        ylims!(ylims)
+    else
+        ymin = minimum(getindex.(vcat(trans.u,sol.u),2))
+        ymax = maximum(getindex.(vcat(trans.u,sol.u),2))
+        yrange=ymax-ymin
+        ylims!(ymin-0.1*yrange,ymax+0.1*yrange)
+    end    
+end        
+
+function recurrence_plot(f,u0,p,period;dd=0.002,steps=10,tcycles=0,npts=300,ncycles=10,size=(900,450))
+    trans = solve(ODEProblem(f,u0,(0.0,tcycles*period),p))
+    u0=trans.u[end]
+    if period>1000
+        tmax=min(ncycles*period,10000)
+    else
+        tmax=ncycles*period
+    end  
+    sol = solve(ODEProblem(f,u0,(0,tmax),p));
+    ts = range(0,tmax,length=npts)
+    xy=hcat(sol(ts,idxs=1).u,sol(ts,idxs=2).u,mod.(sol(ts,idxs=2).u,period))
+    dist = pairwise(Euclidean(),xy,dims=1)
+    dst = floor.(dist/dd)/steps
+    dst[dst.>steps] .= steps
+    p1 = plot(sol,vars=(1,2))
+    p2 = heatmap(ts,ts,dst,c=cgrad([:blue,:white]),legend=false,size=size)
+    plot(p1,p2,layout=(1,2),size=size)
+end    
