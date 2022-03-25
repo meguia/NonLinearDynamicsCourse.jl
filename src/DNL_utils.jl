@@ -6,7 +6,9 @@ using IntervalRootFinding
 using StaticArrays
 using Distances
 
-function plot_nullclines(f,p;xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=30,regions=true)
+inbox(x,y,xlims,ylims) = (xlims[1]<x<xlims[2]) & (ylims[1]<y<ylims[2])
+
+function plot_nullclines(f::Function,p;xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=30,regions=true)
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
     xgrid = xlims[1]:xrange/npts:xlims[2]
@@ -157,25 +159,50 @@ function phase_portrait(f,p;tmax=50,delta=0.001,xlims=[-1.0,1.0],ylims=[-1.0,1.0
     plot_manifolds(p1,f,f_jac,u0_arr,p;tmax=tmax,delta=delta,repulsor=true,xlims=xlims,ylims=ylims,size=size)
 end    
     
+function attractor_basin(f,p,attractors,maxdist;delta=0.1,tmax=1000.0,xlims=(-1.0,1.0),ylims=(-1.0,1.0),size=(900,600))
+    natt = length(attractors)
+    clist = [:black,:red,:blue,:green,:yellow,:black,:purple,:cyan]
+    if (natt>7) 
+        error("maximum number of attractors is 7")
+    end    
+    distance2D(x1,x2) = sqrt((x1[1]-x2[1])^2+(x1[2]-x2[2])^2)
+    x = xlims[1]:delta:xlims[2]
+    y = ylims[1]:delta:ylims[2]
+    nx = length(x)
+    ny = length(y)
+    u0_list=[[xi,yi,0.0] for xi in x for yi in y]
+    prob = ODEProblem(f,u0_list[1],(0,tmax),p)
+    ensamble_prob = EnsembleProblem(prob,prob_func=(prob,i,repeat;u0=u0_list)->(remake(prob,u0=u0_list[i])))
+    sol = solve(ensamble_prob,EnsembleThreads(),trajectories=length(u0_list),save_everystep=false)
+    M = zeros(Int8,nx,ny)
+    for (n,pt) in enumerate(sol)
+        for (m,at) in enumerate(attractors)
+            if (distance2D(pt.u[end][1:2],at)<maxdist)
+                M[(n-1)÷ny+1,mod(n-1,ny)+1] = m
+            end
+        end    
+    end
+    M[1,1]=0
+    contourf(x,y,M',c=clist[1:natt+1],linewidth=0,legend=false,size=size)    
+end    
+
 function solve_plot_forced(f, u0, p, period; tcycles=0, npts=100,ncycles=10,size=(900,400),xlims=false,ylims=false)
     # Assume that the 3rd variable (z) is periodic and plot x,y as a function of z modulo period
     # skip trans period of the forcing
-    tmax = min(ncycles*period,10000)
+    tmax = min(ncycles*period,100000)
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p))
     ncycles = Int(floor(tmax/period))
-    npts = Int(floor(max(npts,npts/p[4])))
-    n = ncycles*npts
     p1 = plot(legend=false)
     p2 = plot(legend=false)
-    c = cgrad([:gray,:gray])
     for j = tcycles+1:ncycles
         ts = range((j-1)*period,stop=j*period,length=npts+1)
         plot!(p1,sol(ts,idxs=1),sol(ts,idxs=2),(0:npts)/npts,color=j)
-        scatter!(p1,[sol(ts[end],idxs=1)],[sol(ts[end],idxs=2)],[1],markersize=2,color=j)
+        scatter!(p1,[sol(ts[end],idxs=1)],[sol(ts[end],idxs=2)],[1],markersize=2,color=j+1)
         scatter!(p1,[sol(ts[1],idxs=1)],[sol(ts[1],idxs=2)],[0],markersize=2,color=j,framestyle=:box)
         plot!(p2,sol(ts,idxs=1),sol(ts,idxs=2),color=j,linealpha=0.3)
         scatter!(p2,[sol(ts[1],idxs=1)],[sol(ts[1],idxs=2)],markersize=2,color=j)
-    end    
+    end
+    scatter!(p2,[sol(ncycles*period,idxs=1)],[sol(ncycles*period,idxs=2)],markersize=2,color=ncycles+1)    
     if xlims isa Tuple
         xlims!(p1,xlims)
         xlims!(p2,xlims)
@@ -193,7 +220,7 @@ function poincare_forced(f, u0, p, period; tcycles=0, ncycles=10,size=(500,500),
     trans = solve(ODEProblem(f,u0,(0.0,tcycles*period),p))
     u0=trans.u[end]
     if period>1000
-        tmax=min(ncycles*period,10000)
+        tmax=min(ncycles*period,100000)
     else
         tmax=ncycles*period
     end    
@@ -216,7 +243,34 @@ function poincare_forced(f, u0, p, period; tcycles=0, ncycles=10,size=(500,500),
         yrange=ymax-ymin
         ylims!(ymin-0.1*yrange,ymax+0.1*yrange)
     end    
-end        
+end     
+
+function poincare_forced_zoom(f, u0, p, period;npts=1000,maxiter=1000,size=(600,600),xlims=[-1,1],ylims=[-1,1])
+    # Assume that the 3rd variable (z) is periodic and plot x,y as a function of z modulo period
+    # skip trans period of the forcing
+    tcycles = 30
+    trans = solve(ODEProblem(f,u0,(0.0,tcycles*period),p))
+    u0=trans.u[end]
+    p1 = plot(legend=false,size=size)
+    ncycles = 1000
+    tmax=ncycles*period
+    kpts = 0
+    kiter = 0
+    while (kpts<npts) & (kiter<maxiter)
+        tsave = period:period:ncycles*period
+        sol = solve(ODEProblem(f,u0,(0.0,tmax),p),saveat=tsave)
+        xlist = getindex.(sol.u,1)
+        ylist = getindex.(sol.u,2)
+        idx=inbox.(xlist,ylist,Ref(xlims),Ref(ylims))
+        scatter!(getindex.(sol.u[idx],1),getindex.(sol.u[idx],2),markersize=0.5,xlims=xlims,ylims=ylims)
+        u0 = sol.u[end]
+        kpts += sum(idx)
+        kiter += 1
+    end
+    println(kpts)
+    println(kiter)
+    p1
+end     
 
 function recurrence_plot(f,u0,p,period;dd=0.002,steps=10,tcycles=0,npts=300,ncycles=10,size=(900,450))
     trans = solve(ODEProblem(f,u0,(0.0,tcycles*period),p))
@@ -235,4 +289,75 @@ function recurrence_plot(f,u0,p,period;dd=0.002,steps=10,tcycles=0,npts=300,ncyc
     p1 = plot(sol,vars=(1,2))
     p2 = heatmap(ts,ts,dst,c=cgrad([:blue,:white]),legend=false,size=size)
     plot(p1,p2,layout=(1,2),size=size)
+end    
+
+function saddle_orbit2D(f,p,period,u0,λ=0.001,maxiter=10000, disttol=1e-9, inftol=10)
+    # funcion que mapea un ciclo (extrender a N ciclos)
+    function map_period(f,u0,p,period)
+        sol = solve(ODEProblem(f,[u0[1],u0[2],0.0],(0,period),p),Tsit5(),reltol=1e-12,save_everystep=false)
+        return sol.u[end][1:2]
+    end   
+    # Funcion que aplica el metodo Schmelcher & Diakonos
+    function Sk(f,prus,p,period,Λ)
+        us = map_period(f,prus,p,period)
+        return prus, prus+Λ*(us-prus)
+    end
+    # base de matrices del metodo para 2D
+    Λ_base = λ*[[1 0; 0 1],[1 0; 0 -1],[-1 0; 0 1]]
+    converged = false
+    fp = u0
+    # iteracion sobre los tres Λ base
+    for Λ in Λ_base
+        prus = u0
+        # iteracion del metodo
+        for i in 1:maxiter
+            prus, us = Sk(f,prus, p,period,Λ)
+            norm(us) > inftol && break
+            if norm(prus - us) < disttol
+                fp = us
+                converged = true
+                break
+            end
+            prus = us
+        end
+    end    
+    return fp,converged
+end
+
+
+function saddle_manifolds_forced(f,f_jac,us,p,period;ncycles=[10,3],npts=300,delta=0.01,xlims=(-1.0,1.0),ylims=(-1.0,1.0),size=(900,600))
+    # Asume que us es la orbita saddle en el plano 
+    xrange = xlims[2]-xlims[1]
+    yrange = ylims[2]-ylims[1]
+    condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
+    affect!(integrator) = terminate!(integrator)
+    t0_array = 0:period/npts:period
+    sol = solve(ODEProblem(f,[us[1],us[2],0.0],(0,period),p),Tsit5(),reltol=1e-12,saveat=t0_array)
+    u0_array=sol.u
+    p1 = plot(legend=false,size=size)
+    for (u0,t0) in zip(u0_array,t0_array)
+        A = f_jac(u0,p)
+        av = eigen(A)
+        for n=1:3
+            u1 = u0+delta*av.vectors[:,n]
+            u2 = u0-delta*av.vectors[:,n]
+            if real(av.values[n])>0
+                tmax=ncycles[1]*period
+                tsave = period:period:ncycles[1]*period
+                sol = solve(ODEProblem(f,u1,(t0,tmax),p),callback=DiscreteCallback(condition,affect!),saveat=tsave)
+                scatter!(p1,sol,vars=(1,2),c=:red,markerstrokewidth=0,markersize=1)
+                sol = solve(ODEProblem(f,u2,(t0,tmax),p),callback=DiscreteCallback(condition,affect!),saveat=tsave)
+                scatter!(p1,sol,vars=(1,2),c=:red,markerstrokewidth=0,markersize=1)
+            elseif real(av.values[n])<0
+                tmax=ncycles[2]*period
+                tsave = 0:-period:-ncycles[2]*period
+                sol = solve(ODEProblem(f,u1,(t0,-tmax),p),callback=DiscreteCallback(condition,affect!),saveat=tsave)
+                scatter!(p1,sol,vars=(1,2),c=:blue,markerstrokewidth=0,markersize=1)
+                sol = solve(ODEProblem(f,u2,(t0,-tmax),p),callback=DiscreteCallback(condition,affect!),saveat=tsave)
+                scatter!(p1,sol,vars=(1,2),c=:blue,markerstrokewidth=0,markersize=1)
+            end 
+        end
+    end    
+    xlims!(p1,xlims)
+    ylims!(p1,ylims)
 end    

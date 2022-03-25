@@ -14,9 +14,13 @@ module NonLinearDynamicsCourse
             classification_linear,
             plot_manifolds,
             phase_portrait,
+            attractor_basin,
             solve_plot_forced,
             poincare_forced,
-            recurrence_plot
+            poincare_forced_zoom,
+            recurrence_plot,
+            saddle_orbit2D,
+            saddle_manifolds_forced
 
     include("DNL_utils.jl")
 
