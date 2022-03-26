@@ -16,7 +16,7 @@ function plot_nullclines(f::Function,p;xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=30
     u = [[x;y] for y in ygrid, x in xgrid]
     Z = u*0
     f.(Z,u,(p,),0)
-    p1 = plot(legend=:none)
+    p1 = plot(legend=:none,fmt = :png)
     if regions
         contourf!(p1,xgrid,ygrid,getindex.(Z,1),levels=[-1000,0,1000],alpha=0.8, c=[:red,:green],label="")
         contourf!(p1,xgrid,ygrid,getindex.(Z,2),levels=[-1000,0,1000],alpha=0.4, c=[:blue,:yellow],label="")
@@ -32,7 +32,7 @@ end
 function solve_plot_nullclines(f,u0,tmax,p;xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
-    p1 = plot_nullclines(f,p;xlims=xlims,ylims=ylims)
+    p1 = plot_nullclines(f,p;xlims=xlims,ylims=ylims,fmt = :png)
     condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
     affect!(integrator) = terminate!(integrator)
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p),callback=DiscreteCallback(condition,affect!))
@@ -79,12 +79,12 @@ function classification_linear(A;Ngrid=5,tmax=2.0,xlims=[-1.2,1.2],ylims=[-1.2,1
     prob = ODEProblem((u,p,t) -> A*u, [0;0], (0,tmax))
     ensamble_prob = EnsembleProblem(prob,prob_func=(prob,i,repeat;u0=u0_arr)->(remake(prob,u0=u0[i])))
     sol = solve(ensamble_prob,EnsembleThreads(),trajectories=length(u0_arr))
-    p2 = plot(sol,vars=(1,2),xlims=xlims,ylims=ylims,arrows=true,c=:black,linewidth=0.5)
+    p2 = plot(sol,vars=(1,2),xlims=xlims,ylims=ylims,arrows=true,c=:black,linewidth=0.5,fmt = :png)
     maxtr = 2.0
     maxdet = 1.3
     trv = -maxtr:maxtr/30:maxtr
     trdet = abs2.(trv)/4
-    p1 = plot(trv,trdet,xaxis=("Tr(A)",(-maxtr,maxtr)),yaxis=("Det(A)",(-maxdet,maxdet)),legend=false)
+    p1 = plot(trv,trdet,xaxis=("Tr(A)",(-maxtr,maxtr)),yaxis=("Det(A)",(-maxdet,maxdet)),legend=false,fmt = :png)
     plot!(p1,[-maxtr,maxtr],[0,0])
     plot!(p1,[0,0],[0,maxdet])
     txt=["Saddle","Stable\nNode","Stable\nFocus","Unstable\nFocus","Unstable\nNode"]
@@ -140,7 +140,7 @@ function plot_manifolds(p1,f,f_jac,u0_array,p;tmax=30,delta=0.001,repulsor=false
 end
 
 function plot_manifolds(f,f_jac,u0_array,p;tmax=30,delta=0.001,repulsor=false,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
-    p1=plot()
+    p1=plot(fmt = :png)
     plot_manifolds(p1,f,f_jac,u0_array,p;tmax=tmax,delta=delta,repulsor=repulsor,xlims=xlims,ylims=ylims,size=size)
 end
 
@@ -161,7 +161,7 @@ end
     
 function attractor_basin(f,p,attractors,maxdist;delta=0.1,tmax=1000.0,xlims=(-1.0,1.0),ylims=(-1.0,1.0),size=(900,600))
     natt = length(attractors)
-    clist = [:black,:red,:blue,:green,:yellow,:black,:purple,:cyan]
+    clist = [:black,:red,:blue,:yellow,:green,:purple,:cyan,:orange]
     if (natt>7) 
         error("maximum number of attractors is 7")
     end    
@@ -174,6 +174,7 @@ function attractor_basin(f,p,attractors,maxdist;delta=0.1,tmax=1000.0,xlims=(-1.
     prob = ODEProblem(f,u0_list[1],(0,tmax),p)
     ensamble_prob = EnsembleProblem(prob,prob_func=(prob,i,repeat;u0=u0_list)->(remake(prob,u0=u0_list[i])))
     sol = solve(ensamble_prob,EnsembleThreads(),trajectories=length(u0_list),save_everystep=false)
+    println("solved")
     M = zeros(Int8,nx,ny)
     for (n,pt) in enumerate(sol)
         for (m,at) in enumerate(attractors)
@@ -183,7 +184,8 @@ function attractor_basin(f,p,attractors,maxdist;delta=0.1,tmax=1000.0,xlims=(-1.
         end    
     end
     M[1,1]=0
-    contourf(x,y,M',c=clist[1:natt+1],linewidth=0,legend=false,size=size)    
+    println("plotting...")
+    contourf(x,y,M',c=clist[1:natt+1],linewidth=0,legend=false,size=size,fmt = :png)    
 end    
 
 function solve_plot_forced(f, u0, p, period; tcycles=0, npts=100,ncycles=10,size=(900,400),xlims=false,ylims=false)
@@ -192,8 +194,8 @@ function solve_plot_forced(f, u0, p, period; tcycles=0, npts=100,ncycles=10,size
     tmax = min(ncycles*period,100000)
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p))
     ncycles = Int(floor(tmax/period))
-    p1 = plot(legend=false)
-    p2 = plot(legend=false)
+    p1 = plot(legend=false,fmt = :png)
+    p2 = plot(legend=false,fmt = :png)
     for j = tcycles+1:ncycles
         ts = range((j-1)*period,stop=j*period,length=npts+1)
         plot!(p1,sol(ts,idxs=1),sol(ts,idxs=2),(0:npts)/npts,color=j)
@@ -214,7 +216,7 @@ function solve_plot_forced(f, u0, p, period; tcycles=0, npts=100,ncycles=10,size
     plot(p1,p2,layout=(1,2),size=size)
 end        
 
-function poincare_forced(f, u0, p, period; tcycles=0, ncycles=10,size=(500,500),xlims=false,ylims=false)
+function poincare_forced(p1,f, u0, p, period; tcycles=0, ncycles=10,msize=0.5,col=:blue,xlims=false,ylims=false)
     # Assume that the 3rd variable (z) is periodic and plot x,y as a function of z modulo period
     # skip trans period of the forcing
     trans = solve(ODEProblem(f,u0,(0.0,tcycles*period),p))
@@ -226,24 +228,26 @@ function poincare_forced(f, u0, p, period; tcycles=0, ncycles=10,size=(500,500),
     end    
     tsave = period:period:ncycles*period
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p),saveat=tsave)
-    scatter(sol,vars=(1,2),legend=false,size=size,markersize=0.5,xlims=xlims,ylims=ylims)
-    if xlims isa Tuple
-        xlims!(xlims)
-    else
+    scatter!(p1,sol,vars=(1,2),legend=false,markersize=msize,color=col,markerstrokewidth=0)
+    if (xlims)
         xmin = minimum(getindex.(vcat(trans.u,sol.u),1))
         xmax = maximum(getindex.(vcat(trans.u,sol.u),1))
         xrange=xmax-xmin
-        xlims!(xmin-0.1*xrange,xmax+0.1*xrange)
-    end    
-    if ylims isa Tuple
-        ylims!(ylims)
-    else
+        xlims!(p1,xmin-0.1*xrange,xmax+0.1*xrange)
+    end
+    if (ylims)    
         ymin = minimum(getindex.(vcat(trans.u,sol.u),2))
         ymax = maximum(getindex.(vcat(trans.u,sol.u),2))
         yrange=ymax-ymin
-        ylims!(ymin-0.1*yrange,ymax+0.1*yrange)
+        ylims!(p1,ymin-0.1*yrange,ymax+0.1*yrange)
     end    
-end     
+    p1
+end   
+
+function poincare_forced(f, u0, p, period; tcycles=0, ncycles=10,size=(500,500),msize=0.5,col=:blue,xlims=false,ylims=false)
+    p1=plot(size=size,fmt=:png)
+    poincare_forced(p1,f, u0, p, period; tcycles=tcycles,ncycles=ncycles,msize=msize,col=col,xlims=xlims,ylims=ylims)
+end    
 
 function poincare_forced_zoom(f, u0, p, period;npts=1000,maxiter=1000,size=(600,600),xlims=[-1,1],ylims=[-1,1])
     # Assume that the 3rd variable (z) is periodic and plot x,y as a function of z modulo period
@@ -251,7 +255,7 @@ function poincare_forced_zoom(f, u0, p, period;npts=1000,maxiter=1000,size=(600,
     tcycles = 30
     trans = solve(ODEProblem(f,u0,(0.0,tcycles*period),p))
     u0=trans.u[end]
-    p1 = plot(legend=false,size=size)
+    p1 = plot(legend=false,size=size,fmt = :png)
     ncycles = 1000
     tmax=ncycles*period
     kpts = 0
@@ -262,7 +266,7 @@ function poincare_forced_zoom(f, u0, p, period;npts=1000,maxiter=1000,size=(600,
         xlist = getindex.(sol.u,1)
         ylist = getindex.(sol.u,2)
         idx=inbox.(xlist,ylist,Ref(xlims),Ref(ylims))
-        scatter!(getindex.(sol.u[idx],1),getindex.(sol.u[idx],2),markersize=0.5,xlims=xlims,ylims=ylims)
+        scatter!(getindex.(sol.u[idx],1),getindex.(sol.u[idx],2),color=:blue,markersize=0.5,xlims=xlims,ylims=ylims)
         u0 = sol.u[end]
         kpts += sum(idx)
         kiter += 1
@@ -288,7 +292,7 @@ function recurrence_plot(f,u0,p,period;dd=0.002,steps=10,tcycles=0,npts=300,ncyc
     dst[dst.>steps] .= steps
     p1 = plot(sol,vars=(1,2))
     p2 = heatmap(ts,ts,dst,c=cgrad([:blue,:white]),legend=false,size=size)
-    plot(p1,p2,layout=(1,2),size=size)
+    plot(p1,p2,layout=(1,2),size=size,fmt = :png)
 end    
 
 function saddle_orbit2D(f,p,period,u0,λ=0.001,maxiter=10000, disttol=1e-9, inftol=10)
@@ -334,7 +338,7 @@ function saddle_manifolds_forced(f,f_jac,us,p,period;ncycles=[10,3],npts=300,del
     t0_array = 0:period/npts:period
     sol = solve(ODEProblem(f,[us[1],us[2],0.0],(0,period),p),Tsit5(),reltol=1e-12,saveat=t0_array)
     u0_array=sol.u
-    p1 = plot(legend=false,size=size)
+    p1 = plot(legend=false,size=size,fmt = :png)
     for (u0,t0) in zip(u0_array,t0_array)
         A = f_jac(u0,p)
         av = eigen(A)
