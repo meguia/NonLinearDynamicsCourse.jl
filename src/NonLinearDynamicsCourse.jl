@@ -7,7 +7,9 @@ module NonLinearDynamicsCourse
     using IntervalRootFinding
     using StaticArrays 
 
-    export  plot_nullclines,
+    export  flux1D,
+            potential1D,
+            plot_nullclines,
             solve_plot_nullclines,
             solve_plot_nullclines_flux,   
             solve_plot_animated,

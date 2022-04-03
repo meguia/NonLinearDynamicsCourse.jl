@@ -8,15 +8,105 @@ using Distances
 
 inbox(x,y,xlims,ylims) = (xlims[1]<x<xlims[2]) & (ylims[1]<y<ylims[2])
 
-function plot_nullclines(f::Function,p;xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=30,regions=true)
+# Flujos 1D
+
+function dualplot_flux1D(f,x,x0,p,sol;
+    size=(900,300))
+
+    p1 = plot(x,f.(x,(p,),0.0),label="f(x)",xlabel="x",ylabel="f(x)")
+    plot!(p1,sol.u,sol.u*0,label="x")
+    scatter!(p1,[x0],[0],label="x0")
+    (ymin,ymax)=extrema(sol.u)
+    p2 = plot(sol,label="x(t)",ylabel="x",ylim=(0.9*ymin,1.1*ymax))
+    plot(p1,p2,layout=(1,2),size=size,fmt=:png)
+end    
+
+function flux1D(f::Function,x0::Float64,tmax::Float64,p::Vector{Float64};
+    xlims=[-1.0,1.0])
+
+    xrange = xlims[2]-xlims[1]
+    x=xlims[1]:xrange/100:xlims[2]
+    prob = ODEProblem(f,x0,(0,tmax),p)
+    sol = solve(prob)
+    dualplot_flux1D(f,x,x0,p,sol)
+end 
+
+function flux1D(f::Function,x0::Float64,tmax::Float64,p::Vector{Float64},condition::Function;
+    xlims=[-1.0,1.0])
+
+    xrange = xlims[2]-xlims[1]
+    x=xlims[1]:xrange/100:xlims[2]
+    prob = ODEProblem(f,x0,(0,tmax),p)
+    condition_terminate(u,t,integrator) = condition(u)
+    affect!(integrator) = terminate!(integrator)
+    sol = solve(prob,callback=DiscreteCallback(condition_terminate,affect!))
+    dualplot_flux1D(f,x,x0,p,sol)
+end
+
+function flux1D(f::Function,x0::Float64,tmax::Float64,p::Vector{Float64},tperturb::Float64,Aperturb::Float64,condition::Function;
+    xlims=[-1.0,1.0])
+
+    xrange = xlims[2]-xlims[1]
+    x=xlims[1]:xrange/100:xlims[2]
+    prob = ODEProblem(f,x0,(0,tmax),p)
+    condition_terminate(u,t,integrator) = condition(u)
+    affect1!(integrator) = terminate!(integrator)
+    affect2!(integrator) = integrator.u += Aperturb
+    cb1 = DiscreteCallback(condition_terminate,affect1!)
+    cb2 = PresetTimeCallback([tperturb],affect2!)
+    sol = solve(prob,callback=CallbackSet(cb1,cb2))
+    dualplot_flux1D(f,x,x0,p,sol)
+end    
+
+function potential1D(V::Function,x0::Float64,tmax::Float64,p::Vector{Float64};
+    xlims=[-1.0,1.0],size=(900,300))
+
+    xrange = xlims[2]-xlims[1]
+    x=xlims[1]:xrange/100:xlims[2]
+    f(x,p,t) = -ForwardDiff.derivative(x -> V(x,p), x)
+    prob = ODEProblem(f,x0,(0,tmax),p)
+    sol = solve(prob)
+    p1 = plot(x,V.(x,(p,)),label="V(x)",xlabel="x",ylabel="V")
+    scatter!(p1,[x0],[V(x0,p)],label="x0")
+    plot!(p1,sol,V.(sol.u,(p,)),color=:black,linewidth=2,label="")
+    p2 = plot(sol,label="x(t)",ylabel="x",ylim=ylims)
+    plot(p1,p2,layout=(1,2),size=size,fmt=:png)
+end    
+
+function potential1D(V::Function,x0::Float64,tmax::Float64,p::Vector{Float64},tperturb::Float64,Aperturb::Float64,condition::Function;
+    xlims=[-1.0,1.0],size=(900,300))
+
+    xrange = xlims[2]-xlims[1]
+    x=xlims[1]:xrange/100:xlims[2]
+    f(x,p,t) = -ForwardDiff.derivative(x -> V(x,p), x)
+    prob = ODEProblem(f,x0,(0,tmax),p)
+    condition_terminate(u,t,integrator) = condition(u)
+    affect1!(integrator) = terminate!(integrator)
+    affect2!(integrator) = integrator.u += Aperturb
+    cb1 = DiscreteCallback(condition_terminate,affect1!)
+    cb2 = PresetTimeCallback([tperturb],affect2!)
+    sol = solve(prob,callback=CallbackSet(cb1,cb2))
+    p1 = plot(x,V.(x,(p,)),label="V(x)",xlabel="x",ylabel="V")
+    scatter!(p1,[x0],[V(x0,p)],label="x0")
+    plot!(p1,sol,V.(sol.u,(p,)),color=:black,linewidth=2,label="")
+    p2 = plot(sol,label="x(t)",ylabel="x",ylim=ylims)
+    plot(p1,p2,layout=(1,2),size=size,fmt=:png)
+end    
+
+# 2D
+
+function plot_nullclines(f::Function,p::Vector{Float64};
+    xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=30,regions=true)
+    #=
+    =#
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
     xgrid = xlims[1]:xrange/npts:xlims[2]
-    ygrid = ylims[1]:xrange/npts:ylims[2]
+    ygrid = ylims[1]:yrange/npts:ylims[2]
     u = [[x;y] for y in ygrid, x in xgrid]
     Z = u*0
     f.(Z,u,(p,),0)
-    p1 = plot(legend=:none,fmt = :png)
+    p1 = plot(xlabel="x",ylabel="y",legend=:none,fmt=:png)
     if regions
         contourf!(p1,xgrid,ygrid,getindex.(Z,1),levels=[-1000,0,1000],alpha=0.8, c=[:red,:green],label="")
         contourf!(p1,xgrid,ygrid,getindex.(Z,2),levels=[-1000,0,1000],alpha=0.4, c=[:blue,:yellow],label="")
@@ -29,17 +119,19 @@ function plot_nullclines(f::Function,p;xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=30
     p1
 end
 
-function solve_plot_nullclines(f,u0,tmax,p;xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
+function solve_plot_nullclines(f::Function,u0::Vector{Float64},tmax::Float64,p::Vector{Float64};
+        xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
-    p1 = plot_nullclines(f,p;xlims=xlims,ylims=ylims,fmt = :png)
+    p1 = plot_nullclines(f,p;xlims=xlims,ylims=ylims)
     condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
     affect!(integrator) = terminate!(integrator)
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p),callback=DiscreteCallback(condition,affect!))
-    plot!(p1,sol,vars=(1,2),c=:black,arrow=true,xlims=xlims,ylims=ylims,xaxis=("μ2"),yaxis=("y"),size=size)
+    plot!(p1,sol,vars=(1,2),c=:black,arrow=true,xlims=xlims,ylims=ylims,size=size)
 end    
 
-function solve_plot_nullclines_flux(f,tmax,p;Ngrid=10,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
+function solve_plot_nullclines_flux(f::Function,tmax::Float64,p::Vector{Float64};
+    Ngrid=10,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
     u0_arr = vec([[xlims[1]+i*xrange/Ngrid,ylims[1]+j*yrange/Ngrid] for i=0:Ngrid, j=0:Ngrid])
@@ -52,7 +144,9 @@ function solve_plot_nullclines_flux(f,tmax,p;Ngrid=10,xlims=[-1.0,1.0],ylims=[-1
     plot!(p1,sol,vars=(1,2),arrows=true,c=:black,linewidth=0.5,xlims=xlims,ylims=ylims,size=size)
 end    
 
-function solve_plot_animated(f,p,N,dt;Ngrid=10,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(400,400),nullclines=false)
+function solve_plot_animated(f::Function,p::Vector{Float64},N::Int64,dt::Float64;
+    Ngrid=10,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(400,400),nullclines=false)
+
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
     u0_arr = vec([[xlims[1]+i*xrange/Ngrid,ylims[1]+j*yrange/Ngrid] for i=0:Ngrid, j=0:Ngrid])
@@ -72,7 +166,9 @@ function solve_plot_animated(f,p,N,dt;Ngrid=10,xlims=[-1.0,1.0],ylims=[-1.0,1.0]
     anim
 end    
 
-function classification_linear(A;Ngrid=5,tmax=2.0,xlims=[-1.2,1.2],ylims=[-1.2,1.2])
+function classification_linear(A::Matrix{Float64};
+    Ngrid=5,tmax=2.0,xlims=[-1.2,1.2],ylims=[-1.2,1.2])
+
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
     u0_arr = vec([[xlims[1]+i*xrange/Ngrid,ylims[1]+j*yrange/Ngrid] for i=0:Ngrid, j=0:Ngrid])
@@ -97,7 +193,9 @@ function classification_linear(A;Ngrid=5,tmax=2.0,xlims=[-1.2,1.2],ylims=[-1.2,1
     plot(p2,p1,layout=(1,2),size=(900,400))
 end
 
-function plot_manifolds(p1,f,f_jac,u0_array,p;tmax=30,delta=0.001,repulsor=false,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
+function plot_manifolds(p1,f,f_jac,u0_array,p;
+    tmax=30,delta=0.001,repulsor=false,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
+
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
     condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
@@ -110,28 +208,28 @@ function plot_manifolds(p1,f,f_jac,u0_array,p;tmax=30,delta=0.001,repulsor=false
                 if real(av.values[n])>0
                     u1 = u0+delta*av.vectors[:,n]
                     sol = solve(ODEProblem(f,u1,(0.0,tmax),p),callback=DiscreteCallback(condition,affect!))
-                    plot!(p1,sol,vars=(1,2),c=:red)
+                    plot!(p1,sol,vars=(1,2),c=:red,label="Wu")
                     u1 = u0-delta*av.vectors[:,n]
                     sol = solve(ODEProblem(f,u1,(0.0,tmax),p),callback=DiscreteCallback(condition,affect!))
-                    plot!(p1,sol,vars=(1,2),c=:red)
+                    plot!(p1,sol,vars=(1,2),c=:red,label="")
                 else
                     u1 = u0+delta*av.vectors[:,n]
                     sol = solve(ODEProblem(f,u1,(0.0,-tmax),p),callback=DiscreteCallback(condition,affect!))
-                    plot!(p1,sol,vars=(1,2),c=:blue)
+                    plot!(p1,sol,vars=(1,2),c=:blue,label="Ws")
                     u1 = u0-delta*av.vectors[:,n]
                     sol = solve(ODEProblem(f,u1,(0.0,-tmax),p),callback=DiscreteCallback(condition,affect!))
-                    plot!(p1,sol,vars=(1,2),c=:blue)
+                    plot!(p1,sol,vars=(1,2),c=:blue,label="")
                 end  
             end
         else
             if tr(A)<0
-                scatter!(p1,[u0[1]],[u0[2]],c=:black)
+                scatter!(p1,[u0[1]],[u0[2]],c=:black,label="A")
             else
-                scatter!(p1,[u0[1]],[u0[2]],c=:red)
+                scatter!(p1,[u0[1]],[u0[2]],c=:red,label="R")
                 if repulsor
                     u1 = u0.+[delta;delta]
                     sol = solve(ODEProblem(f,u1,(0.0,3*tmax),p),callback=DiscreteCallback(condition,affect!))
-                    plot!(p1,sol,vars=(1,2),c=:purple,alpha=0.5)
+                    plot!(p1,sol,vars=(1,2),c=:purple,alpha=0.5,label="")
                 end    
             end    
         end    
@@ -139,12 +237,15 @@ function plot_manifolds(p1,f,f_jac,u0_array,p;tmax=30,delta=0.001,repulsor=false
     plot(p1,legend=false,xlims=xlims,ylims=ylims,size=size)
 end
 
-function plot_manifolds(f,f_jac,u0_array,p;tmax=30,delta=0.001,repulsor=false,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
-    p1=plot(fmt = :png)
+function plot_manifolds(f::Function,f_jac::Function,u0_array::Vector{Vector{Float64}},p::Vector{Float64};
+    tmax=30,delta=0.001,repulsor=false,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
+
+    p1=plot(xlabel="x",ylabel="y",fmt=:png)
     plot_manifolds(p1,f,f_jac,u0_array,p;tmax=tmax,delta=delta,repulsor=repulsor,xlims=xlims,ylims=ylims,size=size)
 end
 
-function phase_portrait(f,p;tmax=50,delta=0.001,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
+function phase_portrait(f::Function,p::Vector{Float64};
+    tmax=50,delta=0.001,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
     # Find fixedpoints in interval 
     function fsv((x,y))
         du = f(similar([x,y]),[x,y],p,0)
@@ -159,7 +260,9 @@ function phase_portrait(f,p;tmax=50,delta=0.001,xlims=[-1.0,1.0],ylims=[-1.0,1.0
     plot_manifolds(p1,f,f_jac,u0_arr,p;tmax=tmax,delta=delta,repulsor=true,xlims=xlims,ylims=ylims,size=size)
 end    
     
-function attractor_basin(f,p,attractors,maxdist;delta=0.1,tmax=1000.0,xlims=(-1.0,1.0),ylims=(-1.0,1.0),size=(900,600))
+function attractor_basin(f::Function,p::Vector{Float64},attractors::Vector{Vector{Float64}},maxdist::Float64;
+    delta=0.1,tmax=1000.0,xlims=(-1.0,1.0),ylims=(-1.0,1.0),size=(900,600))
+
     natt = length(attractors)
     clist = [:black,:red,:blue,:yellow,:green,:purple,:cyan,:orange]
     if (natt>7) 
@@ -185,17 +288,18 @@ function attractor_basin(f,p,attractors,maxdist;delta=0.1,tmax=1000.0,xlims=(-1.
     end
     M[1,1]=0
     println("plotting...")
-    contourf(x,y,M',c=clist[1:natt+1],linewidth=0,legend=false,size=size,fmt = :png)    
+    contourf(x,y,M',c=clist[1:natt+1],linewidth=0,legend=false,xlabel="x",ylabel="y",size=size,fmt = :png)    
 end    
 
-function solve_plot_forced(f, u0, p, period; tcycles=0, npts=100,ncycles=10,size=(900,400),xlims=false,ylims=false)
+function solve_plot_forced(f::Function,u0::Vector{Float64},p::Vector{Float64},period::Float64; 
+    tcycles=0, npts=100,ncycles=10,size=(900,400),xlims=false,ylims=false)
     # Assume that the 3rd variable (z) is periodic and plot x,y as a function of z modulo period
     # skip trans period of the forcing
     tmax = min(ncycles*period,100000)
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p))
     ncycles = Int(floor(tmax/period))
-    p1 = plot(legend=false,fmt = :png)
-    p2 = plot(legend=false,fmt = :png)
+    p1 = plot(xlabel="x",ylabel="y",zlabel="ϕ/2π",legend=false,fmt = :png)
+    p2 = plot(xlabel="x",ylabel="y",legend=false,fmt = :png)
     for j = tcycles+1:ncycles
         ts = range((j-1)*period,stop=j*period,length=npts+1)
         plot!(p1,sol(ts,idxs=1),sol(ts,idxs=2),(0:npts)/npts,color=j)
@@ -230,32 +334,33 @@ function poincare_forced(p1,f, u0, p, period; tcycles=0, ncycles=10,msize=0.5,co
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p),saveat=tsave)
     scatter!(p1,sol,vars=(1,2),legend=false,markersize=msize,color=col,markerstrokewidth=0)
     if (xlims)
-        xmin = minimum(getindex.(vcat(trans.u,sol.u),1))
-        xmax = maximum(getindex.(vcat(trans.u,sol.u),1))
+        (xmin,xmax) = extrema(getindex.(vcat(trans.u,sol.u),1))
         xrange=xmax-xmin
         xlims!(p1,xmin-0.1*xrange,xmax+0.1*xrange)
     end
     if (ylims)    
-        ymin = minimum(getindex.(vcat(trans.u,sol.u),2))
-        ymax = maximum(getindex.(vcat(trans.u,sol.u),2))
+        (ymin,ymax) = extrema(getindex.(vcat(trans.u,sol.u),2))
         yrange=ymax-ymin
         ylims!(p1,ymin-0.1*yrange,ymax+0.1*yrange)
     end    
     p1
 end   
 
-function poincare_forced(f, u0, p, period; tcycles=0, ncycles=10,size=(500,500),msize=0.5,col=:blue,xlims=false,ylims=false)
-    p1=plot(size=size,fmt=:png)
+function poincare_forced(f::Function,u0::Vector{Float64},p::Vector{Float64},period::Float64;
+    tcycles=0, ncycles=10,size=(500,500),msize=0.5,col=:blue,xlims=false,ylims=false)
+
+    p1=plot(xlabel="x",ylabel="y",size=size,fmt=:png)
     poincare_forced(p1,f, u0, p, period; tcycles=tcycles,ncycles=ncycles,msize=msize,col=col,xlims=xlims,ylims=ylims)
 end    
 
-function poincare_forced_zoom(f, u0, p, period;npts=1000,maxiter=1000,size=(600,600),xlims=[-1,1],ylims=[-1,1])
+function poincare_forced_zoom(f::Function,u0::Vector{Float64},p::Vector{Float64},period::Float64;
+    npts=1000,maxiter=1000,size=(600,600),xlims=[-1,1],ylims=[-1,1])
     # Assume that the 3rd variable (z) is periodic and plot x,y as a function of z modulo period
     # skip trans period of the forcing
     tcycles = 30
     trans = solve(ODEProblem(f,u0,(0.0,tcycles*period),p))
     u0=trans.u[end]
-    p1 = plot(legend=false,size=size,fmt = :png)
+    p1 = plot(xlabel="x",ylabel="y",legend=false,size=size,fmt = :png)
     ncycles = 1000
     tmax=ncycles*period
     kpts = 0
@@ -276,7 +381,9 @@ function poincare_forced_zoom(f, u0, p, period;npts=1000,maxiter=1000,size=(600,
     p1
 end     
 
-function recurrence_plot(f,u0,p,period;dd=0.002,steps=10,tcycles=0,npts=300,ncycles=10,size=(900,450))
+function recurrence_plot(f::Function,u0::Vector{Float64},p::Vector{Float64},period::Float64;
+    dd=0.002,steps=10,tcycles=0,npts=300,ncycles=10,size=(900,450))
+
     trans = solve(ODEProblem(f,u0,(0.0,tcycles*period),p))
     u0=trans.u[end]
     if period>1000
@@ -290,12 +397,13 @@ function recurrence_plot(f,u0,p,period;dd=0.002,steps=10,tcycles=0,npts=300,ncyc
     dist = pairwise(Euclidean(),xy,dims=1)
     dst = floor.(dist/dd)/steps
     dst[dst.>steps] .= steps
-    p1 = plot(sol,vars=(1,2))
+    p1 = plot(sol,vars=(1,2),xlabel="x",ylabel="y")
     p2 = heatmap(ts,ts,dst,c=cgrad([:blue,:white]),legend=false,size=size)
     plot(p1,p2,layout=(1,2),size=size,fmt = :png)
 end    
 
-function saddle_orbit2D(f,p,period,u0,λ=0.001,maxiter=10000, disttol=1e-9, inftol=10)
+function saddle_orbit2D(f::Function,u0::Vector{Float64},p::Vector{Float64},period::Float64;
+    λ=0.001,maxiter=10000, disttol=1e-9, inftol=10)
     # funcion que mapea un ciclo (extrender a N ciclos)
     function map_period(f,u0,p,period)
         sol = solve(ODEProblem(f,[u0[1],u0[2],0.0],(0,period),p),Tsit5(),reltol=1e-12,save_everystep=false)
@@ -329,7 +437,8 @@ function saddle_orbit2D(f,p,period,u0,λ=0.001,maxiter=10000, disttol=1e-9, inft
 end
 
 
-function saddle_manifolds_forced(f,f_jac,us,p,period;ncycles=[10,3],npts=300,delta=0.01,xlims=(-1.0,1.0),ylims=(-1.0,1.0),size=(900,600))
+function saddle_manifolds_forced(f::Function,f_jac::Function,us::Vector{Float64},p::Vector{Float64},period::Float64f;
+    ncycles=[10,3],npts=300,delta=0.01,xlims=(-1.0,1.0),ylims=(-1.0,1.0),size=(900,600))
     # Asume que us es la orbita saddle en el plano 
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
@@ -338,7 +447,7 @@ function saddle_manifolds_forced(f,f_jac,us,p,period;ncycles=[10,3],npts=300,del
     t0_array = 0:period/npts:period
     sol = solve(ODEProblem(f,[us[1],us[2],0.0],(0,period),p),Tsit5(),reltol=1e-12,saveat=t0_array)
     u0_array=sol.u
-    p1 = plot(legend=false,size=size,fmt = :png)
+    p1 = plot(xlabel="x",ylabel="y",legend=false,size=size,fmt = :png)
     for (u0,t0) in zip(u0_array,t0_array)
         A = f_jac(u0,p)
         av = eigen(A)
