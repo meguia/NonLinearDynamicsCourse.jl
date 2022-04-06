@@ -437,7 +437,7 @@ function saddle_orbit2D(f::Function,u0::Vector{Float64},p::Vector{Float64},perio
 end
 
 
-function saddle_manifolds_forced(f::Function,f_jac::Function,us::Vector{Float64},p::Vector{Float64},period::Float64f;
+function saddle_manifolds_forced(f::Function,f_jac::Function,us::Vector{Float64},p::Vector{Float64},period::Float64;
     ncycles=[10,3],npts=300,delta=0.01,xlims=(-1.0,1.0),ylims=(-1.0,1.0),size=(900,600))
     # Asume que us es la orbita saddle en el plano 
     xrange = xlims[2]-xlims[1]
