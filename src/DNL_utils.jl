@@ -13,10 +13,13 @@ inbox(x,y,xlims,ylims) = (xlims[1]<x<xlims[2]) & (ylims[1]<y<ylims[2])
 function dualplot_flux1D(f,x,x0,p,sol;
     size=(900,300))
 
-    p1 = plot(x,f.(x,(p,),0.0),label="f(x)",xlabel="x",ylabel="f(x)")
-    plot!(p1,sol.u,sol.u*0,label="x")
-    scatter!(p1,[x0],[0],label="x0")
-    (ymin,ymax)=extrema(sol.u)
+    (ymin,ymax)=extrema(sol.u)    
+    (fmin,fmax)=extrema(f.(x,(p,),0.0))
+    p1 = plot([x[1],x[end]],[0,0],label="",color=:gray)
+    plot!(p1,[0,0],[fmin,fmax],label="",color=:gray,linestyle=:dash)
+    plot!(p1,x,f.(x,(p,),0.0),label="f(x)",xlabel="x",ylabel="f(x)",color=:blue)
+    plot!(p1,sol.u,sol.u*0,label="x",color=:red)
+    scatter!(p1,[x0],[0],label="x0",color=:green)
     p2 = plot(sol,label="x(t)",ylabel="x",ylim=(0.9*ymin,1.1*ymax))
     plot(p1,p2,layout=(1,2),size=size,fmt=:png)
 end    
