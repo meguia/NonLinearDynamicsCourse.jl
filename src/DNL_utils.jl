@@ -98,18 +98,60 @@ end
 
 # 2D
 
-function plot_nullclines(f::Function,p::Vector{Float64};
-    xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=30,regions=true)
-    #=
-    =#
+function myquiver(x, y, u, v; scale=0.3,arrowscale=0.07, color=:black, linealpha=1)
+    
+    function arrow0!(p1, x, y, u, v, as, lc, la)
+        nuv = sqrt(u^2 + v^2)
+        v1, v2 = [u;v] / nuv,  [-v;u] / nuv
+        v4 = (3*v1 + v2)/3.1623  # sqrt(10) to get unit vector
+        v5 = v4 - 2*(v4'*v2)*v2
+        v4, v5 = as*nuv*v4, as*nuv*v5
+        plot!(p1,[x,x+u], [y,y+v], lc=lc,la=la)
+        plot!(p1,[x+u,x+u-v5[1]], [y+v,y+v-v5[2]], lc=lc, la=la)
+        plot!(p1,[x+u,x+u-v4[1]], [y+v,y+v-v4[2]], lc=lc, la=la)
+    end    
+    p1 = scatter(x, y, mc=color, ms=1.5, ratio=1, ma=0.5,legend=false)
+    for (x,y,u,v) in zip(x,y,u,v)
+        arrow0!(p1,x,y,u*scale,v*scale,arrowscale,color,linealpha)
+    end
+    p1
+end
+
+function flux2d_grid(f,p,xlims,ylims,npts)
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
-    xgrid = xlims[1]:xrange/npts:xlims[2]
-    ygrid = ylims[1]:yrange/npts:ylims[2]
+    dx = xrange/(npts-1)
+    dy = yrange/(npts-1)
+    xgrid = xlims[1]:dx:xlims[2]
+    ygrid = ylims[1]:dy:ylims[2]
     u = [[x;y] for y in ygrid, x in xgrid]
     Z = u*0
     f.(Z,u,(p,),0)
-    p1 = plot(xlabel="x",ylabel="y",legend=:none,fmt=:png)
+    dx,dy,xgrid,ygrid,Z
+end    
+
+function flux2d_vectorfield(f::Function,p::Vector{Float64};
+    xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,scale=1.0,size=(600,600))
+
+    dx,dy,xgrid,ygrid,Z = flux2d_grid(f,p,xlims,ylims,npts)
+    u = vec(getindex.(Z,1))
+    v = vec(getindex.(Z,2))
+    x = vec(repeat(xgrid',length(ygrid)))
+    y = repeat(ygrid,length(xgrid))
+    maxuv = max(maximum(abs.(u)),maximum(abs.(v)))
+    delta = min(dx,dy)
+    scale = scale*delta/maxuv
+    p1 = myquiver(x,y,u,v;scale=scale,arrowscale=0.5,color=:blue,linealpha=0.5)
+    plot(p1,xlabel="x",ylabel="y",xlims=xlims,ylims=ylims,legend=:none,fmt=:png,size=size)
+end    
+
+
+function flux2d_nullclines(f::Function,p::Vector{Float64};
+    xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,regions=true)
+    #=
+    =#
+    _,_,xgrid,ygrid,Z = flux2d_grid(f,p,xlims,ylims,npts)
+    p1 = plot(xlabel="x",ylabel="y",legend=:none,)
     if regions
         contourf!(p1,xgrid,ygrid,getindex.(Z,1),levels=[-1000,0,1000],alpha=0.8, c=[:red,:green],label="")
         contourf!(p1,xgrid,ygrid,getindex.(Z,2),levels=[-1000,0,1000],alpha=0.4, c=[:blue,:yellow],label="")
@@ -119,35 +161,35 @@ function plot_nullclines(f::Function,p::Vector{Float64};
         contour!(p1,xgrid,ygrid,getindex.(Z,1),levels=[0],c=:gray,alpha=0.5,label="")
         contour!(p1,xgrid,ygrid,getindex.(Z,2),levels=[0],c=:gray,alpha=0.5,label="")
     end
-    p1
+    plot(p1,fmt=:png)
 end
 
-function solve_plot_nullclines(f::Function,u0::Vector{Float64},tmax::Float64,p::Vector{Float64};
+function flux2d_nullclines(f::Function,u0::Vector{Float64},tmax::Float64,p::Vector{Float64};
         xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
-    p1 = plot_nullclines(f,p;xlims=xlims,ylims=ylims)
+    p1 = flux2d_nullclines(f,p;xlims=xlims,ylims=ylims)
     condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
     affect!(integrator) = terminate!(integrator)
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p),callback=DiscreteCallback(condition,affect!))
     plot!(p1,sol,vars=(1,2),c=:black,arrow=true,xlims=xlims,ylims=ylims,size=size)
 end    
 
-function solve_plot_nullclines_flux(f::Function,tmax::Float64,p::Vector{Float64};
+function flux2d_nullclines(f::Function,u0_array::Vector{Vector{Float64}},tmax::Float64,p::Vector{Float64};
     Ngrid=10,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
-    u0_arr = vec([[xlims[1]+i*xrange/Ngrid,ylims[1]+j*yrange/Ngrid] for i=0:Ngrid, j=0:Ngrid])
-    p1 = plot_nullclines(f,p,xlims=xlims,ylims=ylims)
+    #u0_arr = vec([[xlims[1]+i*xrange/Ngrid,ylims[1]+j*yrange/Ngrid] for i=0:Ngrid, j=0:Ngrid])
+    p1 = flux2d_nullclines(f,p;xlims=xlims,ylims=ylims)
     prob = ODEProblem(f,u0_arr[1],(0.0,tmax),p)
-    ensamble_prob = EnsembleProblem(prob,prob_func=(prob,i,repeat;u0=u0_arr)->(remake(prob,u0=u0[i])))
+    ensamble_prob = EnsembleProblem(prob,prob_func=(prob,i,repeat;u0=u0_array)->(remake(prob,u0=u0[i])))
     condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
     affect!(integrator) = terminate!(integrator)
-    sol = solve(ensamble_prob,EnsembleThreads(),trajectories=length(u0_arr),callback=DiscreteCallback(condition,affect!))
+    sol = solve(ensamble_prob,EnsembleThreads(),trajectories=length(u0_array),callback=DiscreteCallback(condition,affect!))
     plot!(p1,sol,vars=(1,2),arrows=true,c=:black,linewidth=0.5,xlims=xlims,ylims=ylims,size=size)
 end    
 
-function solve_plot_animated(f::Function,p::Vector{Float64},N::Int64,dt::Float64;
+function flux2d_animated(f::Function,p::Vector{Float64},N::Int64,dt::Float64;
     Ngrid=10,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(400,400),nullclines=false)
 
     xrange = xlims[2]-xlims[1]
@@ -159,7 +201,7 @@ function solve_plot_animated(f::Function,p::Vector{Float64},N::Int64,dt::Float64
     x = reduce(hcat,[sol[n](0:dt:N*dt,idxs=1).u for n=1:length(sol)])
     y = reduce(hcat,[sol[n](0:dt:N*dt,idxs=2).u for n=1:length(sol)])
     if (nullclines)
-        p1 = plot_nullclines(f,p;xlims=xlims,ylims=ylims,size=size) 
+        p1 = flux2d_nullclines(f,p;xlims=xlims,ylims=ylims,size=size) 
     else    
         p1 = plot([x[1:2,:]],[y[1:2,:]],color=:black,xlims=xlims,ylims=ylims,legend=false,size=size)
     end    
@@ -196,7 +238,7 @@ function classification_linear(A::Matrix{Float64};
     plot(p2,p1,layout=(1,2),size=(900,400))
 end
 
-function plot_manifolds(p1,f,f_jac,u0_array,p;
+function flux2d_manifolds(p1,f,f_jac,u0_array,p;
     tmax=30,delta=0.001,repulsor=false,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
 
     xrange = xlims[2]-xlims[1]
@@ -240,11 +282,11 @@ function plot_manifolds(p1,f,f_jac,u0_array,p;
     plot(p1,legend=false,xlims=xlims,ylims=ylims,size=size)
 end
 
-function plot_manifolds(f::Function,f_jac::Function,u0_array::Vector{Vector{Float64}},p::Vector{Float64};
+function flux2d_manifolds(f::Function,f_jac::Function,u0_array::Vector{Vector{Float64}},p::Vector{Float64};
     tmax=30,delta=0.001,repulsor=false,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
 
     p1=plot(xlabel="x",ylabel="y",fmt=:png)
-    plot_manifolds(p1,f,f_jac,u0_array,p;tmax=tmax,delta=delta,repulsor=repulsor,xlims=xlims,ylims=ylims,size=size)
+    flux2d_manifolds(p1,f,f_jac,u0_array,p;tmax=tmax,delta=delta,repulsor=repulsor,xlims=xlims,ylims=ylims,size=size)
 end
 
 function phase_portrait(f::Function,p::Vector{Float64};
@@ -260,7 +302,7 @@ function phase_portrait(f::Function,p::Vector{Float64};
     u0_arr=[[mid(rt.interval[1]);mid(rt.interval[2])] for rt in rts]
     p1 = plot_nullclines(f,p;xlims=xlims,ylims=ylims,npts=50,regions=false)
     f_jac(u0,p) = ForwardDiff.jacobian(x -> f(similar(x),x,p,0), u0)
-    plot_manifolds(p1,f,f_jac,u0_arr,p;tmax=tmax,delta=delta,repulsor=true,xlims=xlims,ylims=ylims,size=size)
+    flux2d_manifolds(p1,f,f_jac,u0_arr,p;tmax=tmax,delta=delta,repulsor=true,xlims=xlims,ylims=ylims,size=size)
 end    
     
 function attractor_basin(f::Function,p::Vector{Float64},attractors::Vector{Vector{Float64}},maxdist::Float64;
@@ -294,7 +336,7 @@ function attractor_basin(f::Function,p::Vector{Float64},attractors::Vector{Vecto
     contourf(x,y,M',c=clist[1:natt+1],linewidth=0,legend=false,xlabel="x",ylabel="y",size=size,fmt = :png)    
 end    
 
-function solve_plot_forced(f::Function,u0::Vector{Float64},p::Vector{Float64},period::Float64; 
+function flux2d_forced(f::Function,u0::Vector{Float64},p::Vector{Float64},period::Float64; 
     tcycles=0, npts=100,ncycles=10,size=(900,400),xlims=false,ylims=false)
     # Assume that the 3rd variable (z) is periodic and plot x,y as a function of z modulo period
     # skip trans period of the forcing
