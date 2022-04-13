@@ -181,7 +181,7 @@ function flux2d_nullclines(f::Function,u0_array::Vector{Vector{Float64}},tmax::F
     yrange = ylims[2]-ylims[1]
     #u0_arr = vec([[xlims[1]+i*xrange/Ngrid,ylims[1]+j*yrange/Ngrid] for i=0:Ngrid, j=0:Ngrid])
     p1 = flux2d_nullclines(f,p;xlims=xlims,ylims=ylims)
-    prob = ODEProblem(f,u0_arr[1],(0.0,tmax),p)
+    prob = ODEProblem(f,u0_array[1],(0.0,tmax),p)
     ensamble_prob = EnsembleProblem(prob,prob_func=(prob,i,repeat;u0=u0_array)->(remake(prob,u0=u0[i])))
     condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
     affect!(integrator) = terminate!(integrator)
@@ -300,7 +300,7 @@ function phase_portrait(f::Function,p::Vector{Float64};
     Y = ylims[1]..ylims[2]
     rts = roots(fsv, X × Y)
     u0_arr=[[mid(rt.interval[1]);mid(rt.interval[2])] for rt in rts]
-    p1 = plot_nullclines(f,p;xlims=xlims,ylims=ylims,npts=50,regions=false)
+    p1 = flux2d_nullclines(f,p;xlims=xlims,ylims=ylims,npts=50,regions=false)
     f_jac(u0,p) = ForwardDiff.jacobian(x -> f(similar(x),x,p,0), u0)
     flux2d_manifolds(p1,f,f_jac,u0_arr,p;tmax=tmax,delta=delta,repulsor=true,xlims=xlims,ylims=ylims,size=size)
 end    
