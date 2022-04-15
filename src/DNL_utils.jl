@@ -98,7 +98,7 @@ end
 
 # 2D
 
-function myquiver(x, y, u, v; scale=0.3,arrowscale=0.07, color=:black, linealpha=1)
+function myquiver!(p1,x, y, u, v; scale=0.3,arrowscale=0.07, color=:black, linealpha=1)
     
     function arrow0!(p1, x, y, u, v, as, lc, la)
         nuv = sqrt(u^2 + v^2)
@@ -110,11 +110,16 @@ function myquiver(x, y, u, v; scale=0.3,arrowscale=0.07, color=:black, linealpha
         plot!(p1,[x+u,x+u-v5[1]], [y+v,y+v-v5[2]], lc=lc, la=la)
         plot!(p1,[x+u,x+u-v4[1]], [y+v,y+v-v4[2]], lc=lc, la=la)
     end    
-    p1 = scatter(x, y, mc=color, ms=1.5, ratio=1, ma=0.5,legend=false)
+    scatter!(p1,x, y, mc=color, ms=1.5, ratio=1, ma=0.5,legend=false)
     for (x,y,u,v) in zip(x,y,u,v)
         arrow0!(p1,x,y,u*scale,v*scale,arrowscale,color,linealpha)
     end
     p1
+end
+
+function myquiver(x, y, u, v; scale=0.3,arrowscale=0.07, color=:black, linealpha=1)
+    p1 = plot(xlabel="x",ylabel="y",fmt=:png)
+    myquiver!(p1,x, y, u, v; scale=scale,arrowscale=arrowscale, color=color, linealpha=linealpha)
 end
 
 function flux2d_grid(f,p,xlims,ylims,npts)
@@ -130,8 +135,8 @@ function flux2d_grid(f,p,xlims,ylims,npts)
     dx,dy,xgrid,ygrid,Z
 end    
 
-function flux2d_vectorfield(f::Function,p::Vector{Float64};
-    xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,scale=1.0,size=(600,600))
+function flux2d_vectorfield!(p1,f::Function,p::Vector{Float64};
+    xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,scale=1.0)
 
     dx,dy,xgrid,ygrid,Z = flux2d_grid(f,p,xlims,ylims,npts)
     u = vec(getindex.(Z,1))
@@ -141,52 +146,87 @@ function flux2d_vectorfield(f::Function,p::Vector{Float64};
     maxuv = max(maximum(abs.(u)),maximum(abs.(v)))
     delta = min(dx,dy)
     scale = scale*delta/maxuv
-    p1 = myquiver(x,y,u,v;scale=scale,arrowscale=0.5,color=:blue,linealpha=0.5)
-    plot(p1,xlabel="x",ylabel="y",xlims=xlims,ylims=ylims,legend=:none,fmt=:png,size=size)
+    myquiver!(p1,x,y,u,v;scale=scale,arrowscale=0.5,color=:blue,linealpha=0.5)
+end    
+
+function flux2d_vectorfield(f::Function,p::Vector{Float64};
+    xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,scale=1.0,size=(600,600))
+
+    p1 = plot(xlabel="x",ylabel="y",xlims=xlims,ylims=ylims,fmt=:png,legend=:none,size=size)
+    flux2d_vectorfield!(p1,f,p;xlims=xlims,ylims=ylims,npts=npts,scale=scale)
 end    
 
 
-function flux2d_nullclines(f::Function,p::Vector{Float64};
-    xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,regions=true)
-    #=
-    =#
-    _,_,xgrid,ygrid,Z = flux2d_grid(f,p,xlims,ylims,npts)
-    p1 = plot(xlabel="x",ylabel="y",legend=:none,)
-    if regions
-        contourf!(p1,xgrid,ygrid,getindex.(Z,1),levels=[-1000,0,1000],alpha=0.8, c=[:red,:green],label="")
-        contourf!(p1,xgrid,ygrid,getindex.(Z,2),levels=[-1000,0,1000],alpha=0.4, c=[:blue,:yellow],label="")
-        contour!(p1,xgrid,ygrid,getindex.(Z,1),levels=[0],c=:red,label="")
-        contour!(p1,xgrid,ygrid,getindex.(Z,2),levels=[0],c=:blue,label="")
-    else
-        contour!(p1,xgrid,ygrid,getindex.(Z,1),levels=[0],c=:gray,alpha=0.5,label="")
-        contour!(p1,xgrid,ygrid,getindex.(Z,2),levels=[0],c=:gray,alpha=0.5,label="")
-    end
-    plot(p1,fmt=:png)
-end
+function flux2d_vectorfield(f::Function,u0::Vector{Float64},tmax::Float64,p::Vector{Float64};
+    xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,scale=1.0,size=(600,600))
 
-function flux2d_nullclines(f::Function,u0::Vector{Float64},tmax::Float64,p::Vector{Float64};
-        xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
-    p1 = flux2d_nullclines(f,p;xlims=xlims,ylims=ylims)
+    p1 = flux2d_vectorfield(f,p;xlims=xlims,ylims=ylims,npts=npts,scale=scale,size=size)
     condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
     affect!(integrator) = terminate!(integrator)
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p),callback=DiscreteCallback(condition,affect!))
-    plot!(p1,sol,vars=(1,2),c=:black,arrow=true,xlims=xlims,ylims=ylims,size=size)
+    plot!(p1,sol,vars=(1,2),c=:black,arrow=true,xlims=xlims,ylims=ylims)
 end    
 
-function flux2d_nullclines(f::Function,u0_array::Vector{Vector{Float64}},tmax::Float64,p::Vector{Float64};
-    Ngrid=10,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
+function flux2d_vectorfield(f::Function,u0_array::Vector{Vector{Float64}},tmax::Float64,p::Vector{Float64};
+    xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,scale=1.0,size=(600,600))
+
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
-    #u0_arr = vec([[xlims[1]+i*xrange/Ngrid,ylims[1]+j*yrange/Ngrid] for i=0:Ngrid, j=0:Ngrid])
-    p1 = flux2d_nullclines(f,p;xlims=xlims,ylims=ylims)
+    p1 = flux2d_vectorfield(f,p;xlims=xlims,ylims=ylims,npts=npts,scale=scale,size=size)
     prob = ODEProblem(f,u0_array[1],(0.0,tmax),p)
     ensamble_prob = EnsembleProblem(prob,prob_func=(prob,i,repeat;u0=u0_array)->(remake(prob,u0=u0[i])))
     condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
     affect!(integrator) = terminate!(integrator)
     sol = solve(ensamble_prob,EnsembleThreads(),trajectories=length(u0_array),callback=DiscreteCallback(condition,affect!))
-    plot!(p1,sol,vars=(1,2),arrows=true,c=:black,linewidth=0.5,xlims=xlims,ylims=ylims,size=size)
+    plot!(p1,sol,vars=(1,2),arrows=true,c=:black,linewidth=0.5,xlims=xlims,ylims=ylims)
+end    
+
+function flux2d_nullclines(f::Function,p::Vector{Float64};
+    xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,regions=true,vectorfield=false,size=(700,500))
+    #=
+    =#
+    _,_,xgrid,ygrid,Z = flux2d_grid(f,p,xlims,ylims,npts)
+    p1 = plot(xlabel="x",ylabel="y",legend=:none,fmt=:png,size=size)
+    if regions
+        contourf!(p1,xgrid,ygrid,getindex.(Z,1),levels=[-1000,0,1000],alpha=0.8, c=[:red,:green])
+        contourf!(p1,xgrid,ygrid,getindex.(Z,2),levels=[-1000,0,1000],alpha=0.4, c=[:blue,:yellow])
+        contour!(p1,xgrid,ygrid,getindex.(Z,1),levels=[0],c=:red)
+        contour!(p1,xgrid,ygrid,getindex.(Z,2),levels=[0],c=:green)
+    else
+        contour!(p1,xgrid,ygrid,getindex.(Z,1),levels=[0],c=:red,alpha=0.5)
+        contour!(p1,xgrid,ygrid,getindex.(Z,2),levels=[0],c=:green,alpha=0.5)
+    end
+    if vectorfield
+        flux2d_vectorfield!(p1,f,p;xlims=0.9*xlims,ylims=0.9*ylims)
+    end  
+    p1
+end
+
+function flux2d_nullclines(f::Function,u0::Vector{Float64},tmax::Float64,p::Vector{Float64};
+        xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,regions=true,vectorfield=false,size=(700,500))
+    xrange = xlims[2]-xlims[1]
+    yrange = ylims[2]-ylims[1]
+    p1 = flux2d_nullclines(f,p;xlims=xlims,ylims=ylims,npts=npts,regions=regions,vectorfield=vectorfield,size=size)
+    condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
+    affect!(integrator) = terminate!(integrator)
+    sol = solve(ODEProblem(f,u0,(0.0,tmax),p),callback=DiscreteCallback(condition,affect!))
+    plot!(p1,sol,vars=(1,2),c=:black,arrow=true,xlims=xlims,ylims=ylims)
+end    
+
+function flux2d_nullclines(f::Function,u0_array::Vector{Vector{Float64}},tmax::Float64,p::Vector{Float64};
+    xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,regions=true,vectorfield=false,size=(700,500))
+    xrange = xlims[2]-xlims[1]
+    yrange = ylims[2]-ylims[1]
+    #u0_arr = vec([[xlims[1]+i*xrange/Ngrid,ylims[1]+j*yrange/Ngrid] for i=0:Ngrid, j=0:Ngrid])
+    p1 = flux2d_nullclines(f,p;xlims=xlims,ylims=ylims,npts=npts,regions=regions,vectorfield=vectorfield,size=size)
+    prob = ODEProblem(f,u0_array[1],(0.0,tmax),p)
+    ensamble_prob = EnsembleProblem(prob,prob_func=(prob,i,repeat;u0=u0_array)->(remake(prob,u0=u0[i])))
+    condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
+    affect!(integrator) = terminate!(integrator)
+    sol = solve(ensamble_prob,EnsembleThreads(),trajectories=length(u0_array),callback=DiscreteCallback(condition,affect!))
+    plot!(p1,sol,vars=(1,2),arrows=true,c=:black,linewidth=0.5,xlims=xlims,ylims=ylims)
 end    
 
 function flux2d_animated(f::Function,p::Vector{Float64},N::Int64,dt::Float64;
@@ -238,7 +278,7 @@ function classification_linear(A::Matrix{Float64};
     plot(p2,p1,layout=(1,2),size=(900,400))
 end
 
-function flux2d_manifolds(p1,f,f_jac,u0_array,p;
+function flux2d_manifolds!(p1,f,f_jac,u0_array,p;
     tmax=30,delta=0.001,repulsor=false,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
 
     xrange = xlims[2]-xlims[1]
@@ -286,7 +326,7 @@ function flux2d_manifolds(f::Function,f_jac::Function,u0_array::Vector{Vector{Fl
     tmax=30,delta=0.001,repulsor=false,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(700,500))
 
     p1=plot(xlabel="x",ylabel="y",fmt=:png)
-    flux2d_manifolds(p1,f,f_jac,u0_array,p;tmax=tmax,delta=delta,repulsor=repulsor,xlims=xlims,ylims=ylims,size=size)
+    flux2d_manifolds!(p1,f,f_jac,u0_array,p;tmax=tmax,delta=delta,repulsor=repulsor,xlims=xlims,ylims=ylims,size=size)
 end
 
 function phase_portrait(f::Function,p::Vector{Float64};
@@ -365,7 +405,7 @@ function flux2d_forced(f::Function,u0::Vector{Float64},p::Vector{Float64},period
     plot(p1,p2,layout=(1,2),size=size)
 end        
 
-function poincare_forced(p1,f, u0, p, period; tcycles=0, ncycles=10,msize=0.5,col=:blue,xlims=false,ylims=false)
+function poincare_forced!(p1,f, u0, p, period; tcycles=0, ncycles=10,msize=0.5,col=:blue,xlims=false,ylims=false)
     # Assume that the 3rd variable (z) is periodic and plot x,y as a function of z modulo period
     # skip trans period of the forcing
     trans = solve(ODEProblem(f,u0,(0.0,tcycles*period),p))
@@ -395,7 +435,7 @@ function poincare_forced(f::Function,u0::Vector{Float64},p::Vector{Float64},peri
     tcycles=0, ncycles=10,size=(500,500),msize=0.5,col=:blue,xlims=false,ylims=false)
 
     p1=plot(xlabel="x",ylabel="y",size=size,fmt=:png)
-    poincare_forced(p1,f, u0, p, period; tcycles=tcycles,ncycles=ncycles,msize=msize,col=col,xlims=xlims,ylims=ylims)
+    poincare_forced!(p1,f, u0, p, period; tcycles=tcycles,ncycles=ncycles,msize=msize,col=col,xlims=xlims,ylims=ylims)
 end    
 
 function poincare_forced_zoom(f::Function,u0::Vector{Float64},p::Vector{Float64},period::Float64;
