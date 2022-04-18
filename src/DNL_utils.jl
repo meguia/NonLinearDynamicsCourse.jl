@@ -252,15 +252,20 @@ function flux2d_animated(f::Function,p::Vector{Float64},N::Int64,dt::Float64;
 end    
 
 function classification_linear(A::Matrix{Float64};
-    Ngrid=5,tmax=2.0,xlims=[-1.2,1.2],ylims=[-1.2,1.2])
+    Ngrid=5,tmax=2.0,xlims=[-1.2,1.2],ylims=[-1.2,1.2],circular=true)
 
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
-    u0_arr = vec([[xlims[1]+i*xrange/Ngrid,ylims[1]+j*yrange/Ngrid] for i=0:Ngrid, j=0:Ngrid])
+    if circular
+        Npts = Ngrid*Ngrid
+        u0_arr = u0_arr = vec([[cos(i*2pi/Npts);sin(i*2pi/Npts)] for i=1:Npts])
+    else
+        u0_arr = vec([[xlims[1]+i*xrange/Ngrid,ylims[1]+j*yrange/Ngrid] for i=0:Ngrid, j=0:Ngrid])
+    end    
     prob = ODEProblem((u,p,t) -> A*u, [0;0], (0,tmax))
     ensamble_prob = EnsembleProblem(prob,prob_func=(prob,i,repeat;u0=u0_arr)->(remake(prob,u0=u0[i])))
     sol = solve(ensamble_prob,EnsembleThreads(),trajectories=length(u0_arr))
-    p2 = plot(sol,vars=(1,2),xlims=xlims,ylims=ylims,arrows=true,c=:black,linewidth=0.5,fmt = :png)
+    p2 = plot(sol,vars=(1,2),xlims=xlims,ylims=ylims,arrows=true,c=:black,linewidth=0.5,fmt=:png)
     maxtr = 2.0
     maxdet = 1.3
     trv = -maxtr:maxtr/30:maxtr
