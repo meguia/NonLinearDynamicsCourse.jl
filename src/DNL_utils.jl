@@ -103,7 +103,7 @@ function myquiver!(p1,x, y, u, v; scale=0.3,arrowscale=0.07, color=:black, linea
     function arrow0!(p1, x, y, u, v, as, lc, la)
         nuv = sqrt(u^2 + v^2)
         v1, v2 = [u;v] / nuv,  [-v;u] / nuv
-        v4 = (3*v1 + v2)/3.1623  # sqrt(10) to get unit vector
+        v4 = (3*v1 + v2)/3.1623 
         v5 = v4 - 2*(v4'*v2)*v2
         v4, v5 = as*nuv*v4, as*nuv*v5
         plot!(p1,[x,x+u], [y,y+v], lc=lc,la=la)
@@ -347,7 +347,7 @@ function phase_portrait(f::Function,p::Vector{Float64};
     u0_arr=[[mid(rt.interval[1]);mid(rt.interval[2])] for rt in rts]
     p1 = flux2d_nullclines(f,p;xlims=xlims,ylims=ylims,npts=50,regions=false)
     f_jac(u0,p) = ForwardDiff.jacobian(x -> f(similar(x),x,p,0), u0)
-    flux2d_manifolds(p1,f,f_jac,u0_arr,p;tmax=tmax,delta=delta,repulsor=true,xlims=xlims,ylims=ylims,size=size)
+    flux2d_manifolds!(p1,f,f_jac,u0_arr,p;tmax=tmax,delta=delta,repulsor=true,xlims=xlims,ylims=ylims,size=size)
 end    
     
 function attractor_basin(f::Function,p::Vector{Float64},attractors::Vector{Vector{Float64}},maxdist::Float64;
