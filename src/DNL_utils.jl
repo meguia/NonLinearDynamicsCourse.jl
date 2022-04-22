@@ -230,8 +230,14 @@ function flux2d_nullclines(f::Function,u0_array::Vector{Vector{Float64}},tmax::F
 end    
 
 function flux2d_animated(f::Function,p::Vector{Float64},N::Int64,dt::Float64;
-    Ngrid=10,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(400,400),nullclines=false)
+    Ngrid=10,fps=15,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(400,400),nullclines=false,fname="")
 
+    if isempty(fname)
+        fname = string(Symbol(f))
+        if fname[end] == '!'
+            fname = chop(fname)
+        end  
+    end      
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
     u0_arr = vec([[xlims[1]+i*xrange/Ngrid,ylims[1]+j*yrange/Ngrid] for i=0:Ngrid, j=0:Ngrid])
@@ -244,12 +250,14 @@ function flux2d_animated(f::Function,p::Vector{Float64},N::Int64,dt::Float64;
         p1 = flux2d_nullclines(f,p;xlims=xlims,ylims=ylims,size=size) 
     else    
         p1 = plot([x[1:2,:]],[y[1:2,:]],color=:black,xlims=xlims,ylims=ylims,legend=false,size=size)
-    end    
+    end  
+    # make animation 
     anim = @animate for n=3:N
         plot!(p1,x[n-1:n,:],y[n-1:n,:],color=:black)
     end
-    anim
-end    
+    print("Saving animation ...")
+    gif(anim, fname * "_fps_" * string(fps) * ".gif", fps=fps)
+end       
 
 function classification_linear(A::Matrix{Float64};
     Ngrid=5,tmax=2.0,xlims=[-1.2,1.2],ylims=[-1.2,1.2],circular=true)
