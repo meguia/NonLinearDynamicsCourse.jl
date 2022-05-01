@@ -6,7 +6,25 @@ using IntervalRootFinding
 using StaticArrays
 using Distances
 
+# utilidades generales
+
 inbox(x,y,xlims,ylims) = (xlims[1]<x<xlims[2]) & (ylims[1]<y<ylims[2])
+
+function realplot!(p1,x,y;plotops...)    
+    idx = isreal.(x).*isreal.(y)
+    plot!(p1,real(x[idx]),real(y[idx]))
+end    
+
+function realplot!(x,y;plotops...)    
+    idx = isreal.(x).*isreal.(y)
+    plot!(real(x[idx]),real(y[idx]))
+end 
+
+function realplot(x,y;plotops...)    
+    p1 = plot()
+    realplot!(p1,x,y;plotops...) 
+end    
+
 
 # Flujos 1D
 
