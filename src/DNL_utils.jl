@@ -12,12 +12,12 @@ inbox(x,y,xlims,ylims) = (xlims[1]<x<xlims[2]) & (ylims[1]<y<ylims[2])
 
 function realplot!(p1,x,y;plotops...)    
     idx = isreal.(x).*isreal.(y)
-    plot!(p1,real(x[idx]),real(y[idx]))
+    plot!(p1,real(x[idx]),real(y[idx]);plotops...)
 end    
 
 function realplot!(x,y;plotops...)    
     idx = isreal.(x).*isreal.(y)
-    plot!(real(x[idx]),real(y[idx]))
+    plot!(real(x[idx]),real(y[idx]);plotops...)
 end 
 
 function realplot(x,y;plotops...)    
