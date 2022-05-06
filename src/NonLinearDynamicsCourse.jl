@@ -21,7 +21,8 @@ module NonLinearDynamicsCourse
             poincare_forced_zoom,
             recurrence_plot,
             saddle_orbit2D,
-            saddle_manifolds_forced
+            saddle_manifolds_forced,
+            butterfly
 
     include("DNL_utils.jl")
 

@@ -596,3 +596,45 @@ function saddle_manifolds_forced(f::Function,f_jac::Function,us::Vector{Float64}
     xlims!(p1,xlims)
     ylims!(p1,ylims)
 end    
+
+
+function butterfly(f::Function,u0::Vector{Float64},p::Vector{Float64}; 
+    delta=1e-12,size=(900,400),xlims=false,ylims=false,plotops...)
+    
+    u1=u0
+    u1[1]=u[1]+delta
+    sol0 = solve(ODEProblem(f,u0,(0.0,tmax),p))
+    sol1 = solve(ODEProblem(f,u1,(0.0,tmax),p))
+    if length(u0) == 2
+        p1 = plot(sol0,vars=(1,2),c=:red)
+        plot!(p1,sol1,vars=(1,2),c=:blue)
+    elseif length(u0) == 3        
+        p1 = plot(sol0,vars=(1,2,3),c=:red)
+        plot!(p1,sol1,vars=(1,2,3),c=:blue)  
+    end    
+    dd = 
+    plot(p1,p2,layout=(1,2);size=size,plotops...)
+end
+
+function butterfly(f::Function,u0::Vector{Float64},p::Vector{Float64},tmax::Float64; 
+    dim=3,dt=0.001,delta=1e-12,size=(900,400),xlims=false,ylims=false,plotops...)    
+    
+    print(tmax)
+    u1=copy(u0)
+    u1[1]=u1[1]+delta
+    print(u0-u1)
+    ts = range(0.0,stop=tmax,step=dt)
+    sol0 = solve(ODEProblem(f,u0,(0.0,tmax),p))
+    sol1 = solve(ODEProblem(f,u1,(0.0,tmax),p))
+    if dim == 2
+        p1 = plot(sol0,vars=(1,2),c=:red,xlabel="x",ylabel="y",label="u0")
+        plot!(p1,sol1,vars=(1,2),c=:blue,label="u1")
+    elseif dim == 3
+        p1 = plot(sol0,vars=(1,2,3),c=:red,xlabel="x",ylabel="y",label="u0")
+        plot!(p1,sol1,vars=(1,2,3),c=:blue,label="u1")  
+    end    
+    x0 = sol0(ts,idxs=1)
+    x1 = sol1(ts,idxs=1)
+    p2 = plot(ts,log10.(norm.(x0-x1)),xlabel="t",ylabel="log10(d)",label="")
+    plot(p1,p2,layout=(1,2);size=size,plotops...)
+end        
