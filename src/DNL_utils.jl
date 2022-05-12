@@ -44,7 +44,7 @@ function dualplot_flux1D(f,x,x0,p,sol;
     plot(p1,p2,layout=(1,2);size=size,fmt=:png,plotops...)
 end    
 
-function flux1D(f::Function,x0::Float64,tmax::Float64,p::Vector{Float64};
+function flux1D(f::Function,x0::Float64,tmax::Float64,p;
     xlims=[-1.0,1.0],plotops...)
 
     xrange = xlims[2]-xlims[1]
@@ -54,7 +54,7 @@ function flux1D(f::Function,x0::Float64,tmax::Float64,p::Vector{Float64};
     dualplot_flux1D(f,x,x0,p,sol;plotops...)
 end 
 
-function flux1D(f::Function,x0::Float64,tmax::Float64,p::Vector{Float64},condition::Function;
+function flux1D(f::Function,x0::Float64,tmax::Float64,p,condition::Function;
     xlims=[-1.0,1.0],plotops...)
 
     xrange = xlims[2]-xlims[1]
@@ -66,7 +66,7 @@ function flux1D(f::Function,x0::Float64,tmax::Float64,p::Vector{Float64},conditi
     dualplot_flux1D(f,x,x0,p,sol;plotops...)
 end
 
-function flux1D(f::Function,x0::Float64,tmax::Float64,p::Vector{Float64},tperturb::Float64,Aperturb::Float64,condition::Function;
+function flux1D(f::Function,x0::Float64,tmax::Float64,p,tperturb::Float64,Aperturb::Float64,condition::Function;
     xlims=[-1.0,1.0],plotops...)
 
     xrange = xlims[2]-xlims[1]
@@ -81,7 +81,7 @@ function flux1D(f::Function,x0::Float64,tmax::Float64,p::Vector{Float64},tpertur
     dualplot_flux1D(f,x,x0,p,sol;plotops...)
 end    
 
-function potential1D(V::Function,x0::Float64,tmax::Float64,p::Vector{Float64};
+function potential1D(V::Function,x0::Float64,tmax::Float64,p;
     xlims=[-1.0,1.0],size=(900,300),plotops...)
 
     xrange = xlims[2]-xlims[1]
@@ -96,7 +96,7 @@ function potential1D(V::Function,x0::Float64,tmax::Float64,p::Vector{Float64};
     plot(p1,p2,layout=(1,2);size=size,fmt=:png,plotops...)
 end    
 
-function potential1D(V::Function,x0::Float64,tmax::Float64,p::Vector{Float64},tperturb::Float64,Aperturb::Float64,condition::Function;
+function potential1D(V::Function,x0::Float64,tmax::Float64,p,tperturb::Float64,Aperturb::Float64,condition::Function;
     xlims=[-1.0,1.0],size=(900,300),plotops...)
 
     xrange = xlims[2]-xlims[1]
@@ -158,7 +158,7 @@ function flux2d_grid(f,p,xlims,ylims,npts)
     dx,dy,xgrid,ygrid,Z
 end    
 
-function flux2d_vectorfield!(p1,f::Function,p::Vector{Float64};
+function flux2d_vectorfield!(p1,f::Function,p;
     xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,scale=1.0,plotops...)
 
     dx,dy,xgrid,ygrid,Z = flux2d_grid(f,p,xlims,ylims,npts)
@@ -172,7 +172,7 @@ function flux2d_vectorfield!(p1,f::Function,p::Vector{Float64};
     myquiver!(p1,x,y,u,v;scale=scale,arrowscale=0.5,color=:blue,linealpha=0.5,plotops...)
 end    
 
-function flux2d_vectorfield(f::Function,p::Vector{Float64};
+function flux2d_vectorfield(f::Function,p;
     xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,scale=1.0,size=(600,600),plotops...)
 
     p1 = plot(xlabel="x",ylabel="y",xlims=xlims,ylims=ylims,fmt=:png,legend=:none,size=size)
@@ -180,7 +180,7 @@ function flux2d_vectorfield(f::Function,p::Vector{Float64};
 end    
 
 
-function flux2d_vectorfield(f::Function,u0::Vector{Float64},tmax::Float64,p::Vector{Float64};
+function flux2d_vectorfield(f::Function,u0::Vector{Float64},tmax::Float64,p;
     xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,scale=1.0,size=(600,600),plotops...)
 
     xrange = xlims[2]-xlims[1]
@@ -192,7 +192,7 @@ function flux2d_vectorfield(f::Function,u0::Vector{Float64},tmax::Float64,p::Vec
     plot!(p1,sol,vars=(1,2),c=:black,arrow=true,xlims=xlims,ylims=ylims)
 end    
 
-function flux2d_vectorfield(f::Function,u0_array::Vector{Vector{Float64}},tmax::Float64,p::Vector{Float64};
+function flux2d_vectorfield(f::Function,u0_array::Vector{Vector{Float64}},tmax::Float64,p;
     xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,scale=1.0,size=(600,600),plotops...)
 
     xrange = xlims[2]-xlims[1]
@@ -206,7 +206,7 @@ function flux2d_vectorfield(f::Function,u0_array::Vector{Vector{Float64}},tmax::
     plot!(p1,sol,vars=(1,2),arrows=true,c=:black,linewidth=0.5,xlims=xlims,ylims=ylims)
 end    
 
-function flux2d_nullclines(f::Function,p::Vector{Float64};
+function flux2d_nullclines(f::Function,p;
     xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,regions=true,vectorfield=false,size=(700,500),plotops...)
     #=
     =#
@@ -227,7 +227,7 @@ function flux2d_nullclines(f::Function,p::Vector{Float64};
     p1
 end
 
-function flux2d_nullclines(f::Function,u0::Vector{Float64},tmax::Float64,p::Vector{Float64};
+function flux2d_nullclines(f::Function,u0::Vector{Float64},tmax::Float64,p;
         xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,regions=true,vectorfield=false,size=(700,500),plotops...)
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
@@ -238,7 +238,7 @@ function flux2d_nullclines(f::Function,u0::Vector{Float64},tmax::Float64,p::Vect
     plot!(p1,sol,vars=(1,2),c=:black,arrow=true,xlims=xlims,ylims=ylims)
 end    
 
-function flux2d_nullclines(f::Function,u0_array::Vector{Vector{Float64}},tmax::Float64,p::Vector{Float64};
+function flux2d_nullclines(f::Function,u0_array::Vector{Vector{Float64}},tmax::Float64,p;
     xlims=[-1.0,1.0],ylims=[-1.0,1.0],npts=21,regions=true,vectorfield=false,size=(700,500),plotops...)
     xrange = xlims[2]-xlims[1]
     yrange = ylims[2]-ylims[1]
@@ -252,7 +252,7 @@ function flux2d_nullclines(f::Function,u0_array::Vector{Vector{Float64}},tmax::F
     plot!(p1,sol,vars=(1,2),arrows=true,c=:black,linewidth=0.5,xlims=xlims,ylims=ylims)
 end    
 
-function flux2d_animated(f::Function,p::Vector{Float64},N::Int64,dt::Float64;
+function flux2d_animated(f::Function,p,N::Int64,dt::Float64;
     Ngrid=10,fps=15,xlims=[-1.0,1.0],ylims=[-1.0,1.0],size=(400,400),nullclines=false,fname="")
 
     if isempty(fname)
@@ -619,10 +619,8 @@ end
 function butterfly(f::Function,u0::Vector{Float64},p::Vector{Float64},tmax::Float64; 
     dim=3,dt=0.001,delta=1e-12,size=(900,400),xlims=false,ylims=false,plotops...)    
     
-    print(tmax)
     u1=copy(u0)
     u1[1]=u1[1]+delta
-    print(u0-u1)
     ts = range(0.0,stop=tmax,step=dt)
     sol0 = solve(ODEProblem(f,u0,(0.0,tmax),p))
     sol1 = solve(ODEProblem(f,u1,(0.0,tmax),p))
