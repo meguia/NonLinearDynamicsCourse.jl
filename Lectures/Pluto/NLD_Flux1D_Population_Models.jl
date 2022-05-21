@@ -20,6 +20,9 @@ using Pkg; Pkg.activate("../..")
 # ╔═╡ 38c4e220-d708-11ec-3968-fbbd41c26155
 using PlutoUI, Plots, DifferentialEquations, NonLinearDynamicsCourse
 
+# ╔═╡ 2ac364c2-cbdd-49b4-9f26-9fe89382be5e
+TableOfContents(title="📚 Table of Contents", indent=true, depth=4, aside=true)
+
 # ╔═╡ 6b6a5e19-5298-4969-b1c9-699aa1cb2996
 html"""
 <style>
@@ -175,6 +178,7 @@ html"""
 # ╔═╡ Cell order:
 # ╟─7c860884-5afd-4b4a-b358-4f2bce8bd395
 # ╠═38c4e220-d708-11ec-3968-fbbd41c26155
+# ╟─2ac364c2-cbdd-49b4-9f26-9fe89382be5e
 # ╟─6b6a5e19-5298-4969-b1c9-699aa1cb2996
 # ╟─62cba86d-4406-4d16-8715-b29bee7d3178
 # ╟─6d64cc27-1059-4dd7-8f17-1c6fd9a2eca0
