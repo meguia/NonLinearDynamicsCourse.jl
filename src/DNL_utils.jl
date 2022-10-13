@@ -40,7 +40,7 @@ function dualplot_flux1D(f,x,x0,p,sol;
     plot!(p1,x,f.(x,(p,),0.0),label="f(x)",xlabel="x",ylabel="f(x)",color=:blue)
     plot!(p1,sol.u,sol.u*0,label="x",color=:red)
     scatter!(p1,[x0],[0],label="x0",color=:green)
-    p2 = plot(sol,label="x(t)",ylabel="x",ylim=(0.9*ymin,1.1*ymax))
+    p2 = plot(sol,label="x(t)",ylabel="x",ylims=(0.9*ymin,1.1*ymax))
     plot(p1,p2,layout=(1,2);size=size,fmt=:png,plotops...)
 end    
 
@@ -92,7 +92,7 @@ function potential1D(V::Function,x0::Float64,tmax::Float64,p;
     p1 = plot(x,V.(x,(p,)),label="V(x)",xlabel="x",ylabel="V")
     scatter!(p1,[x0],[V(x0,p)],label="x0")
     plot!(p1,sol,V.(sol.u,(p,)),color=:black,linewidth=2,label="")
-    p2 = plot(sol,label="x(t)",ylabel="x",ylim=ylims)
+    p2 = plot(sol,label="x(t)",ylabel="x",ylims=:ylim)
     plot(p1,p2,layout=(1,2);size=size,fmt=:png,plotops...)
 end    
 
@@ -112,7 +112,7 @@ function potential1D(V::Function,x0::Float64,tmax::Float64,p,tperturb::Float64,A
     p1 = plot(x,V.(x,(p,)),label="V(x)",xlabel="x",ylabel="V")
     scatter!(p1,[x0],[V(x0,p)],label="x0")
     plot!(p1,sol,V.(sol.u,(p,)),color=:black,linewidth=2,label="")
-    p2 = plot(sol,label="x(t)",ylabel="x",ylim=ylims)
+    p2 = plot(sol,label="x(t)",ylabel="x",ylims=:ylim)
     plot(p1,p2,layout=(1,2);size=size,fmt=:png,plotops...)
 end    
 
@@ -189,7 +189,7 @@ function flux2d_vectorfield(f::Function,u0::Vector{Float64},tmax::Float64,p;
     condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
     affect!(integrator) = terminate!(integrator)
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p),callback=DiscreteCallback(condition,affect!))
-    plot!(p1,sol,vars=(1,2),c=:black,arrow=true,xlims=xlims,ylims=ylims)
+    plot!(p1,sol,idxs=(1,2),c=:black,arrow=true,xlims=xlims,ylims=ylims)
 end    
 
 function flux2d_vectorfield(f::Function,u0_array::Vector{Vector{Float64}},tmax::Float64,p;
@@ -203,7 +203,7 @@ function flux2d_vectorfield(f::Function,u0_array::Vector{Vector{Float64}},tmax::
     condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
     affect!(integrator) = terminate!(integrator)
     sol = solve(ensamble_prob,EnsembleThreads(),trajectories=length(u0_array),callback=DiscreteCallback(condition,affect!))
-    plot!(p1,sol,vars=(1,2),arrows=true,c=:black,linewidth=0.5,xlims=xlims,ylims=ylims)
+    plot!(p1,sol,idxs=(1,2),arrows=true,c=:black,linewidth=0.5,xlims=xlims,ylims=ylims)
 end    
 
 function flux2d_nullclines(f::Function,p;
@@ -235,7 +235,7 @@ function flux2d_nullclines(f::Function,u0::Vector{Float64},tmax::Float64,p;
     condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
     affect!(integrator) = terminate!(integrator)
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p),callback=DiscreteCallback(condition,affect!))
-    plot!(p1,sol,vars=(1,2),c=:black,arrow=true,xlims=xlims,ylims=ylims)
+    plot!(p1,sol,idxs=(1,2),c=:black,arrow=true,xlims=xlims,ylims=ylims)
 end    
 
 function flux2d_nullclines(f::Function,u0_array::Vector{Vector{Float64}},tmax::Float64,p;
@@ -249,7 +249,7 @@ function flux2d_nullclines(f::Function,u0_array::Vector{Vector{Float64}},tmax::F
     condition(u,t,integrator) = (u[1]*u[1]+u[2]*u[2]) > max(xrange*xrange,yrange*yrange)
     affect!(integrator) = terminate!(integrator)
     sol = solve(ensamble_prob,EnsembleThreads(),trajectories=length(u0_array),callback=DiscreteCallback(condition,affect!))
-    plot!(p1,sol,vars=(1,2),arrows=true,c=:black,linewidth=0.5,xlims=xlims,ylims=ylims)
+    plot!(p1,sol,idxs=(1,2),arrows=true,c=:black,linewidth=0.5,xlims=xlims,ylims=ylims)
 end    
 
 function flux2d_animated(f::Function,p,N::Int64,dt::Float64;
@@ -296,7 +296,7 @@ function classification_linear(A::Matrix{Float64};
     prob = ODEProblem((u,p,t) -> A*u, [0;0], (0,tmax))
     ensamble_prob = EnsembleProblem(prob,prob_func=(prob,i,repeat;u0=u0_arr)->(remake(prob,u0=u0[i])))
     sol = solve(ensamble_prob,EnsembleThreads(),trajectories=length(u0_arr))
-    p2 = plot(sol,vars=(1,2),xlims=xlims,ylims=ylims,arrows=true,c=:black,linewidth=0.5,fmt=:png)
+    p2 = plot(sol,idxs=(1,2),xlims=xlims,ylims=ylims,arrows=true,c=:black,linewidth=0.5,fmt=:png)
     maxtr = 2.0
     maxdet = 1.3
     trv = -maxtr:maxtr/30:maxtr
@@ -329,17 +329,17 @@ function flux2d_manifolds!(p1,f,f_jac,u0_array,p;
                 if real(av.values[n])>0
                     u1 = u0+delta*av.vectors[:,n]
                     sol = solve(ODEProblem(f,u1,(0.0,tmax),p),callback=DiscreteCallback(condition,affect!))
-                    plot!(p1,sol,vars=(1,2),c=:red,label="Wu")
+                    plot!(p1,sol,idxs=(1,2),c=:red,label="Wu")
                     u1 = u0-delta*av.vectors[:,n]
                     sol = solve(ODEProblem(f,u1,(0.0,tmax),p),callback=DiscreteCallback(condition,affect!))
-                    plot!(p1,sol,vars=(1,2),c=:red,label="")
+                    plot!(p1,sol,idxs=(1,2),c=:red,label="")
                 else
                     u1 = u0+delta*av.vectors[:,n]
                     sol = solve(ODEProblem(f,u1,(0.0,-tmax),p),callback=DiscreteCallback(condition,affect!))
-                    plot!(p1,sol,vars=(1,2),c=:blue,label="Ws")
+                    plot!(p1,sol,idxs=(1,2),c=:blue,label="Ws")
                     u1 = u0-delta*av.vectors[:,n]
                     sol = solve(ODEProblem(f,u1,(0.0,-tmax),p),callback=DiscreteCallback(condition,affect!))
-                    plot!(p1,sol,vars=(1,2),c=:blue,label="")
+                    plot!(p1,sol,idxs=(1,2),c=:blue,label="")
                 end  
             end
         else
@@ -350,7 +350,7 @@ function flux2d_manifolds!(p1,f,f_jac,u0_array,p;
                 if repulsor
                     u1 = u0.+[delta;delta]
                     sol = solve(ODEProblem(f,u1,(0.0,3*tmax),p),callback=DiscreteCallback(condition,affect!))
-                    plot!(p1,sol,vars=(1,2),c=:purple,alpha=0.5,label="")
+                    plot!(p1,sol,idxs=(1,2),c=:purple,alpha=0.5,label="")
                 end    
             end    
         end    
@@ -454,7 +454,7 @@ function poincare_forced!(p1,f, u0, p, period;
     end    
     tsave = period:period:ncycles*period
     sol = solve(ODEProblem(f,u0,(0.0,tmax),p),saveat=tsave)
-    scatter!(p1,sol,vars=(1,2);legend=false,markersize=msize,color=col,markerstrokewidth=0,plotops...)
+    scatter!(p1,sol,idxs=(1,2);legend=false,markersize=msize,color=col,markerstrokewidth=0,plotops...)
     if (xlims)
         (xmin,xmax) = extrema(getindex.(vcat(trans.u,sol.u),1))
         xrange=xmax-xmin
@@ -519,7 +519,7 @@ function recurrence_plot(f::Function,u0::Vector{Float64},p::Vector{Float64},peri
     dist = pairwise(Euclidean(),xy,dims=1)
     dst = floor.(dist/dd)/steps
     dst[dst.>steps] .= steps
-    p1 = plot(sol,vars=(1,2),xlabel="x",ylabel="y")
+    p1 = plot(sol,idxs=(1,2),xlabel="x",ylabel="y")
     p2 = heatmap(ts,ts,dst,c=cgrad([:blue,:white]),legend=false,size=size)
     plot(p1,p2,layout=(1,2);size=size,fmt=:png,plotops...)
 end    
@@ -580,16 +580,16 @@ function saddle_manifolds_forced(f::Function,f_jac::Function,us::Vector{Float64}
                 tmax=ncycles[1]*period
                 tsave = period:period:ncycles[1]*period
                 sol = solve(ODEProblem(f,u1,(t0,tmax),p),callback=DiscreteCallback(condition,affect!),saveat=tsave)
-                scatter!(p1,sol,vars=(1,2),c=:red,markerstrokewidth=0,markersize=1)
+                scatter!(p1,sol,idxs=(1,2),c=:red,markerstrokewidth=0,markersize=1)
                 sol = solve(ODEProblem(f,u2,(t0,tmax),p),callback=DiscreteCallback(condition,affect!),saveat=tsave)
-                scatter!(p1,sol,vars=(1,2),c=:red,markerstrokewidth=0,markersize=1)
+                scatter!(p1,sol,idxs=(1,2),c=:red,markerstrokewidth=0,markersize=1)
             elseif real(av.values[n])<0
                 tmax=ncycles[2]*period
                 tsave = 0:-period:-ncycles[2]*period
                 sol = solve(ODEProblem(f,u1,(t0,-tmax),p),callback=DiscreteCallback(condition,affect!),saveat=tsave)
-                scatter!(p1,sol,vars=(1,2),c=:blue,markerstrokewidth=0,markersize=1)
+                scatter!(p1,sol,idxs=(1,2),c=:blue,markerstrokewidth=0,markersize=1)
                 sol = solve(ODEProblem(f,u2,(t0,-tmax),p),callback=DiscreteCallback(condition,affect!),saveat=tsave)
-                scatter!(p1,sol,vars=(1,2),c=:blue,markerstrokewidth=0,markersize=1)
+                scatter!(p1,sol,idxs=(1,2),c=:blue,markerstrokewidth=0,markersize=1)
             end 
         end
     end    
@@ -606,11 +606,11 @@ function butterfly(f::Function,u0::Vector{Float64},p::Vector{Float64};
     sol0 = solve(ODEProblem(f,u0,(0.0,tmax),p))
     sol1 = solve(ODEProblem(f,u1,(0.0,tmax),p))
     if length(u0) == 2
-        p1 = plot(sol0,vars=(1,2),c=:red)
-        plot!(p1,sol1,vars=(1,2),c=:blue)
+        p1 = plot(sol0,idxs=(1,2),c=:red)
+        plot!(p1,sol1,idxs=(1,2),c=:blue)
     elseif length(u0) == 3        
-        p1 = plot(sol0,vars=(1,2,3),c=:red)
-        plot!(p1,sol1,vars=(1,2,3),c=:blue)  
+        p1 = plot(sol0,idxs=(1,2,3),c=:red)
+        plot!(p1,sol1,idxs=(1,2,3),c=:blue)  
     end    
     dd = 
     plot(p1,p2,layout=(1,2);size=size,plotops...)
@@ -625,14 +625,14 @@ function butterfly(f::Function,u0::Vector{Float64},p::Vector{Float64},tmax::Floa
     sol0 = solve(ODEProblem(f,u0,(0.0,tmax),p))
     sol1 = solve(ODEProblem(f,u1,(0.0,tmax),p))
     if dim == 2
-        p1 = plot(sol0,vars=(1,2),c=:red,xlabel="x",ylabel="y",label="u0")
-        plot!(p1,sol1,vars=(1,2),c=:blue,label="u1")
+        p1 = plot(sol0,idxs=(1,2),c=:red,xlabel="x",ylabel="y",label="u0")
+        plot!(p1,sol1,idxs=(1,2),c=:blue,label="u1")
     elseif dim == 3
-        p1 = plot(sol0,vars=(1,2,3),c=:red,xlabel="x",ylabel="y",label="u0")
-        plot!(p1,sol1,vars=(1,2,3),c=:blue,label="u1")  
+        p1 = plot(sol0,idxs=(1,2,3),c=:red,xlabel="x",ylabel="y",label="u0")
+        plot!(p1,sol1,idxs=(1,2,3),c=:blue,label="u1")  
     end    
     x0 = sol0(ts,idxs=1)
     x1 = sol1(ts,idxs=1)
-    p2 = plot(ts,log10.(norm.(x0-x1)),xlabel="t",ylabel="log10(d)",label="")
+    p2 = plot(ts,log10.(norm.(x0-x1))[1,:],xlabel="t",ylabel="log10(d)",label="")
     plot(p1,p2,layout=(1,2);size=size,plotops...)
 end        
