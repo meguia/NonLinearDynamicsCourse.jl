@@ -141,15 +141,15 @@ flux2d_nullclines(vdp!,u0_arr,10.0,[0.8];xlims=[-3,3],ylims=[-3,3],title="van de
 
 # ╔═╡ 03ff660e-4b24-4721-b9f3-13d107600d4a
 md"""
-xini $(@bind xini Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) 
-yini $(@bind yini Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
-μ : $(@bind μ Slider(-0.1:0.01:10.0,default=-0.1;show_value=true))
-tmax : $(@bind tmax Slider(10:10:300.0,default=10.0;show_value=true)) 
+x0 $(@bind x0_vdp Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
+y0 $(@bind y0_vdp Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
+μ : $(@bind μ_vdp Slider(-0.1:0.01:10.0,default=-0.1;show_value=true)) \
+tmax : $(@bind tmax_vdp Slider(10:10:300.0,default=10.0;show_value=true)) 
 """
 
 # ╔═╡ 83131186-2dbb-4e2c-9d7a-6b2d829e2222
 begin
-	sol=solve(ODEProblem(vdp!,[xini;yini],(0,tmax),[μ]))
+	sol=solve(ODEProblem(vdp!,[x0_vdp,y0_vdp],(0,tmax_vdp),[μ_vdp]))
     p1=plot(sol,idxs=(0,1),xlabel="t",ylabel="x")
     p2=plot(sol,idxs=(1,2),legend=false,xlabel="x",ylabel="y")
     scatter!(p2,[sol.u[1][1]],[sol.u[2][1]])
@@ -265,15 +265,15 @@ end
 
 # ╔═╡ 835a9bda-3708-41af-bdab-1b8e72aac4aa
 md"""
-xini2 $(@bind xini2 Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
-yini2 $(@bind yini2 Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
-μ2 : $(@bind μ2 Slider(-0.1:0.01:10.0,default=-0.1;show_value=true)) \
-K2 : $(@bind K2 Slider(0.1:0.01:3.0,default=-0.1;show_value=true)) \
-tmax2 : $(@bind tmax2 Slider(10:10:300.0,default=10.0;show_value=true)) 
+x0 $(@bind x0_reed Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
+y0 $(@bind y0_reed Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
+μ : $(@bind μ_reed Slider(-0.1:0.01:10.0,default=-0.1;show_value=true)) \
+k : $(@bind k_reed Slider(0.1:0.01:3.0,default=-0.1;show_value=true)) \
+tmax : $(@bind tmax_reed Slider(10:10:300.0,default=10.0;show_value=true)) 
 """
 
 # ╔═╡ df7cab14-abe1-4f93-aec8-5422fea44fde
-flux2d_nullclines(reed!,[xini2;yini2],tmax2,[μ2 , K2],xlims=[-3,3],ylims=[-2,2],title="Lengüeta (Rayleigh)")
+flux2d_nullclines(reed!,[x0_reed;y0_reed],tmax_reed,[μ_reed , k_reed],xlims=[-3,3],ylims=[-2,2],title="Lengüeta (Rayleigh)")
 
 # ╔═╡ 163d352d-ce42-4828-a418-520033c23719
 # Escribimos la ecuacion de la lengueta
@@ -287,16 +287,16 @@ end
 
 # ╔═╡ e8947aad-3033-45e1-b9be-c85950b82fef
 md"""
-xini $(@bind xini3 Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
-yini $(@bind yini3 Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
-μ : $(@bind μ3 Slider(-0.1:0.01:10.0,default=-0.1;show_value=true)) \
-v0 : $(@bind v0 Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) \
-K : $(@bind K3 Slider(0.1:0.01:3.0,default=-0.1;show_value=true)) \
-tmax : $(@bind tmax3 Slider(10:10:300.0,default=10.0;show_value=true)) 
+x0 $(@bind x0_vreed Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
+y0 $(@bind y0_vreed Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
+μ : $(@bind μ_vreed Slider(-0.1:0.01:10.0,default=-0.1;show_value=true)) \
+v0 : $(@bind v0_vreed Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) \
+k : $(@bind k_vreed Slider(0.1:0.01:3.0,default=-0.1;show_value=true)) \
+tmax : $(@bind tmax_vreed Slider(10:10:300.0,default=10.0;show_value=true)) 
 """
 
 # ╔═╡ ea88f136-6d7d-4b0a-b4d9-2f4e898930af
-flux2d_nullclines(vreed!,[xini3;yini3],tmax3,[μ3 , K3, v0],xlims=[-3,3],ylims=[-2,2],title="Lengüeta (Rayleigh) Modificada")
+flux2d_nullclines(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed],xlims=[-3,3],ylims=[-2,2],title="Lengüeta (Rayleigh) Modificada")
 
 # ╔═╡ 5a415de4-126d-462c-9eb0-ee06500dae22
 md"""
@@ -334,6 +334,86 @@ $\dot{x}=y$
 $\dot{y}=-\mu C_{bow}(y-v) -x$
 """
 
+# ╔═╡ a86dcb92-ffc6-44f5-9be0-d787b592cb44
+friction(x) = atan(x/0.05)*exp(-2*abs(x))
+
+# ╔═╡ 678cc7eb-8e86-47ec-8176-35d30eff5587
+function bow!(du,u,p,t)
+    du[1]=u[2]
+    du[2]=-p[1]*friction(u[2]-p[2])-u[1]
+    du
+end    
+
+# ╔═╡ 66497e63-8efd-472b-aa35-50c826917eb2
+md"""
+x0 $(@bind x0_bow Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
+y0 $(@bind y0_bow Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
+μ : $(@bind μ_bow Slider(0.01:0.01:1.0,default=0.1;show_value=true)) \
+v0 : $(@bind v0_bow Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) \
+tmax : $(@bind tmax_bow Slider(10:10:300.0,default=10.0;show_value=true)) 
+"""
+
+# ╔═╡ 35f0087d-28fc-42b8-baeb-c18df8a149fd
+flux2d_nullclines(bow!,[x0_bow;y0_bow],tmax_bow,[μ_bow,v0_bow];xlims=[-3,3],ylims=[-2,2],title="Cuerda Frotada")
+
+# ╔═╡ fdb0d8bc-d780-4b81-9e54-19510d70ed76
+begin
+	sol2 = solve(ODEProblem(bow!, [x0_bow;y0_bow],tmax_bow,[μ_bow,v0_bow]));
+    p1b = plot(sol2)
+    p2b = plot(sol2,idxs=(1,2),arrow=true)
+    plot(p1b,p2b,layout=(1,2),size = (900,450),title="Cuerda Frotada")
+end	
+
+# ╔═╡ 7fb98f93-be03-43d3-895c-c72f58f09d27
+md"""
+# Oscilador de Duffing van der Pol
+
+En todos los osciladores anteriores la fuerza de restitucion era lineal, pero podemos considerar osciladores de forma mas general como:
+
+$\dot{x} = y$
+
+$\dot{y} = -C(x,y)y - K(x)$
+
+en el caso del oscilador armonico $C(x,y)=c$ y $K(x)=kx$. En el oscilador de Van der Pol y en de Rayleigh cambia la forma de $C(x,y)$ pero la restitucion sigue siendo lineal. 
+
+El oscilador de Duffing propone una fuerza de restitucion cubica: $K(x)=x^3-\beta x$.
+
+Podemos combinar la restitucion cubica de Duffing con la friccion negativa de Van der Pol para tener un auto-oscilador no lineal con mas variedad de comportamiento. Tenemos entondes el modelo de Duffing-Van der Pol:
+
+$\dot{x} = y$
+
+$\dot{y} = \mu y -x^2y +\beta x - x^3$
+
+"""
+
+# ╔═╡ 216ef632-f17a-4f28-9aad-04364803bcb7
+#definimos la Ed para el oscilador de Duffing-VanderPol
+function duffing_vanderpol!(du,u,p,t)
+    du[1] = u[2]
+    du[2] = (p[1]-u[1]*u[1])*u[2]+u[1]*(p[2]-u[1]*u[1])
+    du
+end    
+
+# ╔═╡ b81e8195-10ac-467f-b99f-c881a4f3d681
+md"""
+x0 $(@bind x0_dvdp Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
+y0 $(@bind y0_dvdp Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
+μ : $(@bind μ_dvdp Slider(0.01:0.01:1.0,default=0.1;show_value=true)) \
+β : $(@bind β_dvdp Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) \
+tmax : $(@bind tmax_dvdp Slider(10:10:300.0,default=10.0;show_value=true)) 
+"""
+
+# ╔═╡ fe8fe3ec-34f2-40e8-a48e-c5d9cbc50985
+flux2d_nullclines(duffing_vanderpol!,[x0_dvdp;y0_dvdp],tmax_dvdp,[μ_dvdp,β_dvdp]; npts=41,xlims=[-3,3],ylims=[-2,2],title="Duffing van der Pol")
+
+# ╔═╡ 362650ef-1899-4e53-93c0-c5761bdf47b8
+begin
+	sol3 = solve(ODEProblem(duffing_vanderpol!, [x0_dvdp;y0_dvdp],tmax_dvdp,[μ_dvdp,β_dvdp]));
+    p1c = plot(sol3)
+    p2c = plot(sol3,idxs=(1,2),arrow=true)
+    plot(p1c,p2c,layout=(1,2),size = (900,450),title="Duffing Van der Pol")
+end	
+
 # ╔═╡ 4f04d9a1-3e58-4ead-b5c4-daf4d88e9f29
 html"""
 <style>
@@ -355,7 +435,7 @@ input[type*="range"] {
 # ╠═cdc8339f-138f-4eb7-a88d-7ca495cc453f
 # ╠═0ea1cdee-a4a3-49b3-a599-7d3f3449855b
 # ╠═2f7d77f0-2eff-43ff-93d4-cba683e6030c
-# ╟─03ff660e-4b24-4721-b9f3-13d107600d4a
+# ╠═03ff660e-4b24-4721-b9f3-13d107600d4a
 # ╠═83131186-2dbb-4e2c-9d7a-6b2d829e2222
 # ╟─818e26ce-d164-4bad-8e31-7a1bf6be9ef3
 # ╠═e3e59c04-2817-44be-8df0-3e42f77cda58
@@ -367,7 +447,17 @@ input[type*="range"] {
 # ╠═835a9bda-3708-41af-bdab-1b8e72aac4aa
 # ╠═df7cab14-abe1-4f93-aec8-5422fea44fde
 # ╠═163d352d-ce42-4828-a418-520033c23719
-# ╟─e8947aad-3033-45e1-b9be-c85950b82fef
+# ╠═e8947aad-3033-45e1-b9be-c85950b82fef
 # ╠═ea88f136-6d7d-4b0a-b4d9-2f4e898930af
 # ╟─5a415de4-126d-462c-9eb0-ee06500dae22
+# ╠═a86dcb92-ffc6-44f5-9be0-d787b592cb44
+# ╠═678cc7eb-8e86-47ec-8176-35d30eff5587
+# ╟─66497e63-8efd-472b-aa35-50c826917eb2
+# ╠═35f0087d-28fc-42b8-baeb-c18df8a149fd
+# ╠═fdb0d8bc-d780-4b81-9e54-19510d70ed76
+# ╟─7fb98f93-be03-43d3-895c-c72f58f09d27
+# ╠═216ef632-f17a-4f28-9aad-04364803bcb7
+# ╟─b81e8195-10ac-467f-b99f-c881a4f3d681
+# ╠═fe8fe3ec-34f2-40e8-a48e-c5d9cbc50985
+# ╠═362650ef-1899-4e53-93c0-c5761bdf47b8
 # ╟─4f04d9a1-3e58-4ead-b5c4-daf4d88e9f29
