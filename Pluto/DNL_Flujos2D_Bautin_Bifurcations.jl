@@ -14,451 +14,180 @@ macro bind(def, element)
     end
 end
 
-# ╔═╡ 17ccb720-4b26-4279-8a40-0e34a33d835d
-push!(LOAD_PATH, joinpath(dirname(pwd()) , "src"))
+# ╔═╡ 69f343ec-574b-4252-9134-b30bbd74effb
+using DifferentialEquations, Plots, Parameters, Setfield, BifurcationKit, PlutoUI
 
-# ╔═╡ 72fa8994-47dc-4e0c-80fd-021f5fc629e9
-using NonLinearDynamicsCourse, PlutoUI, DifferentialEquations, Plots
-
-# ╔═╡ 78c1fc6a-a145-4e30-9a9f-d4c66e1a591a
-# ╠═╡ disabled = true
-#=╠═╡
-import Pkg; Pkg.add("ForwardDiff"), Pkg.add("IntervalRootFinding"), Pkg.add("StaticArrays"), Pkg.add("LinearAlgebra")
-  ╠═╡ =#
-
-# ╔═╡ 87c571dc-db6a-4cfe-9581-2b12d3f2ee91
-md"""
-# Oscilador de Van der Pol
- 
-Partimos de vuelta de las ecuaciones del oscilador armonico simple
+# ╔═╡ 787ce7fe-8a11-48c3-aca9-9a4c0ac4dbd2
+md""" 
+# Bautin (Hopf Generalizada)
 
 $\dot{x} = y$
 
-$\dot{y} = -\mu y - kx$
- 
-Recordamos que $y$ representa la velocidad del oscilador, $\dot{y}$ la aceleracion que es igual a la fuerza aplicada (suponemos masa igual a 1) que es lo que esta en el miembro derecho de la segunda ecuacion. En ese miembro $-kx$ representa la fuerza lineal elastica, mientras que $-\mu y$ es la friccion, una fuerza que siempre se opone a la velocidad ($\mu>0$) y que termina frenando el oscilador. En toda esta parte vamos a estudiar diferentes formas generales de esta **friccion** que de forma general vamos a ponerla como funcion de la posicion $x$ y la velocidad $y$:
-
-$\dot{x} = y$
-
-$\dot{y} = -F(x,y)y - kx$
-
-Friccion lineal:
-
-$F(x,y)=\mu$
-
-Es interesante ver que $\mu$ se puede ver tambien como una resistencia.
-De hecho las ecuaciones anteriores describen tambien otro sistema fisico muy estudiado, el circuito RLC:
-
-<div>
-<img src="../files/RLC.jpg" width="500px">
-</div>
-
-Para el caso en serie $\mu = R/L$ $k=1/LC$ y la variable $y$ corresponde a la corriente que circula por el circuito ($x$ vendria a ser la carga del capacitor).
-
-Nos podemos preguntar ahora que pasaria si usaramos una "resistencia negativa" para valores pequeños de corriente (en realidad estrictamente de carga). Lo que queremos es que el termino $-\mu y$ se invierta para valores de $x$ pequeños. 
-
-Por que? Porque de esta forma podemos evitar que las oscilaciones "mueran". Si la amplitud de la oscilacion $x$ se hace muy chica (el sistema se frena por la friccion o la resistencia) aparece una fuerza que va **a favor** de la velocidad (o de la circulacion de corriente) inyectandole energia al sistema, sin embargo para amplitudes de oscilacion grandes gana la disipacion (resistencia) que frena el sistema. 
-
-De esta forma se alcanza un equilibrio en el que se producen auto-oscilaciones que no se extinguen. Estas oscilaciones en el espacio de fases se conocen como **ciclos limite** y son conjuntos invariantes (atractores o repulsores) como los puntos fijos. Notar la diferencia con las oscilaciones y orbitas concentricas del oscilador armonico sin friccion. A diferencia de este ultimo las oscilaciones de relajacion (o los ciclos limite en general) son atractoras, es decir que cualquier condicion cercana termina convergiendo a ellas. 
-
-
-Como podemos escribir esta inversion de la friccion para valores de $x$ cercanos a cero? 
-La forma mas simple es usar una nolinealidad cuadratica. Una parabola hundida en el eje tiene valores negativos cerca del $x=0$ y positivos para valores grandes de $x$ (tanto positivos como negativos). Por lo tanto podemos reemplazar a la friccion lineal por $\mu(x^2-1)$ . La resistencia (o friccion) en funcion de la posicion del oscilador (o de la carga en el capacitor) seria:
-
-Friccion Van der Pol
-
-$F(x,y) = \mu(x^2-1)$
-
-Y el sistema de ecuaciones diferenciales queda escrito:
-
-$\dot{x} = y$
-
-$\dot{y} = \mu (1 -x^2)y - x$
-
-La parte 'negativa' de la resistencia es $+\mu y$, una fuerza que va **a favor** de la velocidad. Estamos asumiendo que $\mu>0$. Mientras que queda un termino $- \mu x^2 y$ que siempre se va a oponer a la velocidad y gana para amplitudes grandes.
-
-La idea de una 'resistencia negativa' no es caprichosa, algunos elementos electronicos de base de semiconductor y valvulares se comportan de esa forma (son activos). De hecho Van der Pol dedujo sus ecuaciones a partir del estudio de un circuito amplificador con un elemento valvular (triodo) en 1927. El mismo efecto se puede observar en tubos de neon y otros elementos con descarga en gases.
-
-
-<div>
-<img src="../files/Neon1.PNG" width="300px">
-</div>
-
-Una version mas elaborada de este sistema dio lugar al desarrollo del famoso VODER en 1939:
-
-<div>
-<img src="../files/Voder.PNG" width="500px">
-</div>
-"""
-
-# ╔═╡ f19f478a-8428-4b25-9a10-9c4b85a3b096
-md"""
-## Puntos fijos y estabilidad
-Vamos a calcular los puntos fijos primero por el metodo de las nulclinas.
-
-La primera nuclina es trivial, una recta horizontal $y=0$ con lo cual todos los puntos fijos van a estar sobre el eje $x$
-
-La segunda nulclina es mas complicada escrita como $y$ en funcion de $x$:
-
-$y = \Large\frac{1}{\mu}\frac{x}{1-x^2}$
-
-pero el unico punto que esta en las dos curvas es $(0,0)$ que es el unico punto fijo. 
-
-Calculamos la matriz jacobiana
-
-
-$\begin{pmatrix}
-0 & 1\\
--1-2\mu xy & \mu(1-x^2)
-\end{pmatrix}$
-
-que evaluada en el unico punto fijo da
-
-$\begin{pmatrix}
-0 & 1\\
--1 & \mu
-\end{pmatrix}$
-
-Es facil calcular $Tr=\mu$ y $\Delta=1$. El determinante es siempre positivo y la traza tiene el signo del parámetro $\mu$ uqe asumimos positivo
-
-Cuando $\mu>0$ el origen se hace repulsor, pero globalmente el flujo es atractor, para valores grandes de $x$ y de $y$ la disipacion no lineal $-x^2y$ domina y actua como un atractor global. Por lo tanto se va a formar un **ciclo limite estable** en el medio. Veamos como son las nulclinas y el flujo.
-"""
-
-# ╔═╡ cdc8339f-138f-4eb7-a88d-7ca495cc453f
-#definimos la Ed para el oscilador de VanderPol
-function vdp!(du,u,p,t)
-    du[1] = u[2]
-    du[2] = p[1]*(1.0-u[1]*u[1])*u[2]-u[1]
-    du
-end    
-
-# ╔═╡ 0ea1cdee-a4a3-49b3-a599-7d3f3449855b
-u0_arr=[[2.0;3.0],[-2.0;-3.0],[0.1;-0.1],[3.0;-2.0]]
-
-# ╔═╡ 2f7d77f0-2eff-43ff-93d4-cba683e6030c
-flux2d_nullclines(vdp!,u0_arr,10.0,[0.8];xlims=[-3,3],ylims=[-3,3],title="van der Pol")
-
-# ╔═╡ 03ff660e-4b24-4721-b9f3-13d107600d4a
-md"""
-x0 $(@bind x0_vdp Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
-y0 $(@bind y0_vdp Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
-μ : $(@bind μ_vdp Slider(-0.1:0.01:10.0,default=-0.1;show_value=true)) \
-tmax : $(@bind tmax_vdp Slider(10:10:300.0,default=10.0;show_value=true)) 
-"""
-
-# ╔═╡ 83131186-2dbb-4e2c-9d7a-6b2d829e2222
-begin
-	sol=solve(ODEProblem(vdp!,[x0_vdp,y0_vdp],(0,tmax_vdp),[μ_vdp]))
-    p1=plot(sol,idxs=(0,1),xlabel="t",ylabel="x")
-    p2=plot(sol,idxs=(1,2),legend=false,xlabel="x",ylabel="y")
-    scatter!(p2,[sol.u[1][1]],[sol.u[2][1]])
-    plot(p1,p2,layout=(1,2),size=(700,300),fmt=:png,title="van der Pol")
-end	
-
-# ╔═╡ 818e26ce-d164-4bad-8e31-7a1bf6be9ef3
-md"""
-Con la funcion `flux2d_animated` podemos hacer un gif animado de la evolucion del sistema. Recibe como argumentos:
-- la funcion del campo vector
-- el vector de parametros 
-- la cantidad total de frames
-- el paso temporal entre frames
-
-Y como argumentos opcionales:
-- Ngrid la cantidad de puntos de la grilla de condiciones iniciales (default Ngrid=10)
-- fps (default fps=15) la cantidad de frames por segundo del gif
-- xlmis,ylims los limites del grafico
-- nullclines (default false) si agrega las nulclinas al grafico.
-- fname (default empty) nombre del gif, por defecto le da el nombre de la funcion y el fps
-"""
-
-# ╔═╡ 136021df-bc6b-4e0c-b136-51ecbe46c2ff
-md"""
-## Osciladores de relajacion. Transformacion de Lienard
-
-A diferencia de los puntos fijos no hay un método general para establecer la existencia de ciclos límites, es decir de órbitas cerradas **aisladas** que funcionan como conjunto atractor (o repulsor). Existen criterios que por lo general son difíciles de aplicar y muy frecuentemente la existencia de ciclos se puede presuponer a partir del análisis del flujo global o a través de ciertas transformaciones de coordenadas. 
-
-Vamos a ver un ejemplo para el oscilador de van der Pol para el caso en el que el parámetro $\mu$ tiene un valor alto. En ese caso el sistema se aproxima al comportamiento de un **oscilador de relajación**. Los osciladores de relajación surgen de la alternancia entre un proceso lento de carga y uno rápido de descarga (por ejemplo los picos en el comportamiento eléctrico de las neuronas) y suceden en dos escalas temporales diferentes. Si se puede hacer un cambio de coordenadas de forma tal que esas dos escalas de tiempo estén separadas en las nuevas variables (es decir que tengamos una variable "rápida" y otra "lenta") el ciclo límite va a formarse por una trayectoria que salta (o relaja) en la variable rápida de una rama a otra de la nulclina sobre la que se arrastra siguiendo la ecuación de la variable lenta.
-
-En el caso del oscilador de van der Pol se puede hacer un cambio de coordenadas no lineal (sin meternos en los detalles ) que transforma la forma anterior a una oscilador de relajación con variables rápida $(x_1)$ y lenta $(x_2)$. El cambio es el siguiente:
-
-$x_1 = \mu^{-1/2}x$
-
-$y_1 = \mu^{-3/2}(\mu x - x^3/3 -y)$
-
-En las nuevas variables el sistema queda escrito como 
-
-$\dot{x_1} = \mu(x_1-x_1^3/3-y_1)$
-
-$\dot{y_1} = x_1/\mu$
-
-como antes el unico punto fijo esta en $(0,0)$ pero la primera nulclina se puede escribir como una cubica que tiene siempre forma de "N":
-
-$y_1 = x_1 - x_1^2/3$
-
-y la otra es una recta vertical en $x_1=0$
-
-Pero lo interesante pasa cuando $\mu$ es grande. Como esta dividiendo a la variacion de $y_1$ y multiplicando a la variacion de $x_1$, podemos imaginar que el flujo va a ser mucho mas rapido en la direccion horizontal $\dot{x_1}>>\dot{x_2}$, salvo cuando se aproxima a la nulclina en forma de "N" (porque ahi se hace $\dot{x_1}=1$). 
-Entonces tenemos un flujo rapido horizontal que va a parar a la nulclina en forma de "N". 
-
-Toda la zona que esta arriba de la N ($y_1>x_1-x_1^3/3$ hace $\dot{x_1}$ sea negativo) fluye hacia la izquierda y lo que esta abajo de la N ($y_1<x_1-x_1^3/3$ hace $\dot{x_1}$ sea positivo) fluye a la derecha.
-
-Esto hace que en terminos del flujo horizontal la parte del medio de la N sea inestable (el flujo se aleja de ella) y las ramas de los costados sean estables (el flujo es atraido hacia ellas)
-
-Una vez que la trayectoria esta cerca de la nulclina N va a fluir lentamente siguiendo el signo de $x_1$: hacia abajo a la izquierda del eje vertical y hacia arriba a la derecha del eje. 
-
-Cuando la orbita llega al "codo" de la N se encuentra con la rama inestable de la nulclina y 'salta' (relaja) a la otra rama estable. Esto es lo que se conoce como un oscilador de relajacion.
-
-Atencion porque esta forma sirve para ver mejor el ciclo limite pero por la transformacion de coorenadas la bifurcacion de Hopf es 'degenerada' ($\mu=0$ implicaria ademas que $\dot{y_1}$ se hiciese infinito).
-"""
-
-# ╔═╡ 13cfddda-608e-4cec-8acb-2f129c3cee93
-#definimos la Ed para el oscilador de VanderPol en la version de Lienard (oscilador de relajacion)
-function lienard!(du,u,p,t)
-    du[1] = p[1]*(u[1]*(1.0-u[1]*u[1]/3.0)-u[2])
-    du[2] = u[1]/p[1]
-end    
-
-# ╔═╡ d1c1644b-17e1-4c1d-aa2b-60cae1ebf5cd
-flux2d_nullclines(lienard!,[2.0;0.1],20.0,[3.0],xlims=[-3,3],ylims=[-2,2],title="Oscilador de Relajacion")
-
-# ╔═╡ 465c2e99-b477-47a8-8503-4f356bf1dd7b
-md"""
-# Auto-Oscilador de Rayleigh. Lengueta. 
-
-El oscilador de van der Pol lo habiamos presentado como el auto-oscilador con 'friccion negativa' mas simple posible porque la no linealidad era cuadratica y estaba solo en la variable $x$. Esa dependencia de la resistencia en $x$ aparecia de forma natural en circuitos valulares (tristores) y lo presentamos por motivos historicos.
-
-Pero la no linealidad que da una zona de friccion negativa puede ser una funcion de la velocidad $y$ en lugar de $x$. De hecho esta forma aparece naturalmente cuando la fuerza que da impulso al oscilador cuando tiene poca amplitud es de origen aerodinamico. Entonces en su forma mas simple, con una no linealidad cuadratica podemos proponer la friccion no lineal.
-
-Friccion Rayleigh:
-
-$C(x,y)=y^2-\mu$
-
-Comparar con la friccion de Van der Pol del principio. Esta forma la llamamos de Rayleigh porque es quien en su Teoria del Sonido en 1865 propone este modelo para la oscilacion de una lengueta de clarinete:
-
-$\dot{x} = y$
-
-$\dot{y} = -(y^2-\mu)y-kx$
-
-donde $k$ determina la frecuencia de oscilacion. El sistema anterior se puede escribir entonces, distribuyendo los dos terminos de la fraccion:
-
-$\dot{x} = y$
-
-$\dot{y} = \mu y-y^3-kx$
-
-De forma analoga que en el modelo de Van der Pol el termino $y^3$ representa la friccion no lineal que atenua las oscilaciones para amplitudes grandes y $\mu y$ es la 'friccion negativa' que actua para valores pequeños de $y$ como fuerza restitutiva y representa la accion del clarinetista generando una inestabilidad con el flujo del aire contra la lengueta.
-
-El calculo de las nulclinas los puntos fijos y la estabilidad de los mismo queda para la practica. Pero se puede notar al jugar con los parametros que surge un ciclo límite estable al igual que en el Van der Pol. Para que valor de $\mu$?
-"""
-
-# ╔═╡ b141b69f-2c2c-4928-94fd-3f1ae92d38ac
-# Escribimos la ecuacion de la lengueta
-function reed!(du,u,p,t)
-    (μ,k) = p
-    du[1] = u[2]
-    du[2] = u[2]*(μ-u[2]*u[2])-k*u[1]
-    du
-end    
-
-# ╔═╡ 835a9bda-3708-41af-bdab-1b8e72aac4aa
-md"""
-x0 $(@bind x0_reed Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
-y0 $(@bind y0_reed Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
-μ : $(@bind μ_reed Slider(-0.1:0.01:10.0,default=-0.1;show_value=true)) \
-k : $(@bind k_reed Slider(0.1:0.01:3.0,default=-0.1;show_value=true)) \
-tmax : $(@bind tmax_reed Slider(10:10:300.0,default=10.0;show_value=true)) 
-"""
-
-# ╔═╡ df7cab14-abe1-4f93-aec8-5422fea44fde
-flux2d_nullclines(reed!,[x0_reed;y0_reed],tmax_reed,[μ_reed , k_reed],xlims=[-3,3],ylims=[-2,2],title="Lengüeta (Rayleigh)")
-
-# ╔═╡ 163d352d-ce42-4828-a418-520033c23719
-# Escribimos la ecuacion de la lengueta
-function vreed!(du,u,p,t)
-    (μ,k,v0) = p
-	v = u[2] - v0
-    du[1] = u[2]
-    du[2] = v*(μ-v*v)-k*u[1]
-    du
-end    
-
-# ╔═╡ e8947aad-3033-45e1-b9be-c85950b82fef
-md"""
-x0 $(@bind x0_vreed Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
-y0 $(@bind y0_vreed Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
-μ : $(@bind μ_vreed Slider(-0.1:0.01:10.0,default=-0.1;show_value=true)) \
-v0 : $(@bind v0_vreed Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) \
-k : $(@bind k_vreed Slider(0.1:0.01:3.0,default=-0.1;show_value=true)) \
-tmax : $(@bind tmax_vreed Slider(10:10:300.0,default=10.0;show_value=true)) 
-"""
-
-# ╔═╡ ea88f136-6d7d-4b0a-b4d9-2f4e898930af
-flux2d_nullclines(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed],xlims=[-3,3],ylims=[-2,2],title="Lengüeta (Rayleigh) Modificada")
-
-# ╔═╡ 5a415de4-126d-462c-9eb0-ee06500dae22
-md"""
-# Oscilador Frotado (violin puntual)
-
-Otro sistema con auto-oscilaciones simples fue propuesto (tambien por Rayleigh en 1877!) para modelar la accion de **slip & stick** del arco contra la cuerda del violin, pero se puede aplicar a un monton de sistemas que generan autooscilaciones a partir de la friccion.
-
-<div>
-<img src="../files/Conveyor.PNG" width="300px">
-</div>
-
-
-El modelo propuesto era similar al de la figura. Una masa unida a un resorte esta apoyada sobre una cinta transportadora con friccion que se mueve con velocidad constante hacia la derecga. Al principio el rozamiento estatico hace que la masa este adherida (momento **stick**) a la cinta y ejerce una fuerza que iguala a la del resorte. Pero la friccion estatica tiene un valor maximo y cuando el resorte esta muy estirado no puede superar la fuerza elastica y la masa es arrastrada por el resorte y desliza con rozamiento dinamico sobre la cinta hacia la izquierda (momento **slip**) y puede llegar por inercia incluso a comprimir un poco el resorte hasta que la masa se frena y queda enganchada de vuelta por el rozamiento estatico y se repite el proceso.
-
-Si bien se trata de un sistema simple, la forma funcional de la friccion (que tiene que ser funcion de la diferencia de velocidad entre la masa y la cinta es decir si desliza o no) no puede ser algo tan simple como una cuadratica o una cubica porque tiene que cambiar de signo bruscamente, ya que la friccion tiene que ser maxima para deslizamientos bajos e ir decreciendo para deslizamientos mas rapidos. La forma clasica es algo asi:
-
-<div>
-<img src="../files/Friction.PNG" width="300px">
-</div>
-
-donde $\dot{x}-v$ es el 'deslizamiento', es decir la diferencia de velocidades entre la masa y la cinta. Cuando la masa esta adherida a la cinta $C$ puede tomar todos los valores en la vertical hasta un valor maximo hacia un lado y hacia el otro y luego 'salta' al rozamiento dinamico que es menor a medida que el deslizamiento es mas cada vez rapido.
-
-La forma funcional que esta representada arriba para el desplazamiento $d=\dot{x}-v$  es:
-
-$C(d)=sign(d) e^{-2|d|}$
-
-Ese salto brusco de la funcion signo trae problemas numericos, lo regularizamos con la funcion arco tangente del desplazamiento dividido por un numero pequeño. el arcotangente es un escalon mas suave que el signo (si el valor se hace muy pequeño se va haciendo cada vez mas parecido a la funcion signo).
-
-$C_{bow}(d)=arctan(d/\epsilon) e^{-2|d|}$
-
-Con todos estos elementos la friccion del Arco propuesta por Rayleigh y el sistema final queda escrito
-
-$\dot{x}=y$
-
-$\dot{y}=-\mu C_{bow}(y-v) -x$
-"""
-
-# ╔═╡ a86dcb92-ffc6-44f5-9be0-d787b592cb44
-friction(x) = atan(x/0.05)*exp(-2*abs(x))
-
-# ╔═╡ 678cc7eb-8e86-47ec-8176-35d30eff5587
-function bow!(du,u,p,t)
-    du[1]=u[2]
-    du[2]=-p[1]*friction(u[2]-p[2])-u[1]
-    du
-end    
-
-# ╔═╡ 66497e63-8efd-472b-aa35-50c826917eb2
-md"""
-x0 $(@bind x0_bow Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
-y0 $(@bind y0_bow Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
-μ : $(@bind μ_bow Slider(0.01:0.01:1.0,default=0.1;show_value=true)) \
-v0 : $(@bind v0_bow Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) \
-tmax : $(@bind tmax_bow Slider(10:10:300.0,default=10.0;show_value=true)) 
-"""
-
-# ╔═╡ 35f0087d-28fc-42b8-baeb-c18df8a149fd
-flux2d_nullclines(bow!,[x0_bow;y0_bow],tmax_bow,[μ_bow,v0_bow];xlims=[-3,3],ylims=[-2,2],title="Cuerda Frotada")
-
-# ╔═╡ fdb0d8bc-d780-4b81-9e54-19510d70ed76
-begin
-	sol2 = solve(ODEProblem(bow!, [x0_bow;y0_bow],tmax_bow,[μ_bow,v0_bow]));
-    p1b = plot(sol2)
-    p2b = plot(sol2,idxs=(1,2),arrow=true)
-    plot(p1b,p2b,layout=(1,2),size = (900,450),title="Cuerda Frotada")
-end	
-
-# ╔═╡ 7fb98f93-be03-43d3-895c-c72f58f09d27
-md"""
-# Oscilador de Duffing van der Pol
-
-En todos los osciladores anteriores la fuerza de restitucion era lineal, pero podemos considerar osciladores de forma mas general como:
-
-$\dot{x} = y$
-
-$\dot{y} = -C(x,y)y - K(x)$
-
-en el caso del oscilador armonico $C(x,y)=c$ y $K(x)=kx$. En el oscilador de Van der Pol y en de Rayleigh cambia la forma de $C(x,y)$ pero la restitucion sigue siendo lineal. 
-
-El oscilador de Duffing propone una fuerza de restitucion cubica: $K(x)=x^3-\beta x$.
-
-Podemos combinar la restitucion cubica de Duffing con la friccion negativa de Van der Pol para tener un auto-oscilador no lineal con mas variedad de comportamiento. Tenemos entondes el modelo de Duffing-Van der Pol:
-
-$\dot{x} = y$
-
-$\dot{y} = \mu y -x^2y +\beta x - x^3$
+$\dot{y} = -kx + \mu y + \sigma x^2y  + \xi y (x^2+y^2)^2$
 
 """
 
-# ╔═╡ 216ef632-f17a-4f28-9aad-04364803bcb7
-#definimos la Ed para el oscilador de Duffing-VanderPol
-function duffing_vanderpol!(du,u,p,t)
-    du[1] = u[2]
-    du[2] = (p[1]-u[1]*u[1])*u[2]+u[1]*(p[2]-u[1]*u[1])
-    du
-end    
-
-# ╔═╡ b81e8195-10ac-467f-b99f-c881a4f3d681
-md"""
-x0 $(@bind x0_dvdp Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
-y0 $(@bind y0_dvdp Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
-μ : $(@bind μ_dvdp Slider(0.01:0.01:1.0,default=0.1;show_value=true)) \
-β : $(@bind β_dvdp Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) \
-tmax : $(@bind tmax_dvdp Slider(10:10:300.0,default=10.0;show_value=true)) 
-"""
-
-# ╔═╡ fe8fe3ec-34f2-40e8-a48e-c5d9cbc50985
-flux2d_nullclines(duffing_vanderpol!,[x0_dvdp;y0_dvdp],tmax_dvdp,[μ_dvdp,β_dvdp]; npts=41,xlims=[-3,3],ylims=[-2,2],title="Duffing van der Pol")
-
-# ╔═╡ 362650ef-1899-4e53-93c0-c5761bdf47b8
-begin
-	sol3 = solve(ODEProblem(duffing_vanderpol!, [x0_dvdp;y0_dvdp],tmax_dvdp,[μ_dvdp,β_dvdp]));
-    p1c = plot(sol3)
-    p2c = plot(sol3,idxs=(1,2),arrow=true)
-    plot(p1c,p2c,layout=(1,2),size = (900,450),title="Duffing Van der Pol")
-end	
-
-# ╔═╡ 55f33551-4a7f-42c0-a049-deeaa3c76826
-md"""
-# Van der Pol con termino 5to
-"""
-
-# ╔═╡ 55557142-a9e3-4f3f-9827-eed2678e0c40
-function vdp5!(du,u,p,t)
-	(μ,σ,ν) = p
-	r = u[1]^2+u[2]^2
-	du[1] = u[2]
-	du[2] = -u[1]+u[2]*(μ-σ*r-ν*r^2)
+# ╔═╡ 0d7be9cf-763d-4781-b747-ee4f99fabeee
+function bautin(u,p)
+	@unpack μ,k,σ,ξ = p
+	[
+		u[2]
+		-k*u[1] + u[2]*(μ + σ*u[1]^2 + ξ*(u[1]^2+u[2]^2)^2)
+	]	
 end
 
-# ╔═╡ 14090140-770f-45ba-9277-6310263ef643
+# ╔═╡ f717ab21-53ec-4bb6-8fc1-d20521cc5d7c
+begin
+	opts_br = ContinuationPar(p_max = 0.5, p_min = -0.5,dsmax=0.01,dsmin=1e-4,ds=1e-4,max_steps = 150,n_inversion = 8)
+end;
+
+# ╔═╡ 2e254f9c-d846-40b7-94cb-c346bfc07c75
+opts_cd2 = ContinuationPar(opts_br, p_max = 0.5, ds = 1e-4);
+
+# ╔═╡ d327bb35-d502-46ef-8001-a1715926bc20
+opts_fold_po = ContinuationPar(opts_cd2, dsmax = 0.01, detect_bifurcation = 0, max_steps = 60, detect_event = 0, ds = 0.001, plot_every_step = 10);
+
+# ╔═╡ 72b130b2-ce95-4e32-af95-a3c5c20e87dd
 md"""
-x0 $(@bind x0_vdp5 Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
-y0 $(@bind y0_vdp5 Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
-μ : $(@bind μ_vdp5 Slider(-6:0.01:1.0,default=0.1;show_value=true)) \
-σ : $(@bind σ_vdp5 Slider(-2.0:0.01:2.0,default=-0.1;show_value=true)) \
-ν : $(@bind ν_vdp5 Slider(0.0:0.01:0.3,default=-0.1;show_value=true)) \
-tmax : $(@bind tmax_vdp5 Slider(10:10:300.0,default=10.0;show_value=true)) 
+# Bautin acopladas (Hopf-Hopf)
+
+$\dot{x_1}  =  y_1$
+$\dot{x_2}  =  y_2$
+$\dot{y_1}  =  -k_1x_1 + \mu_1 y_1 + \sigma x_1^2y_1  + c_{21} x_2^2y_1  + \xi y_1 (x_1^2+y_1^2)^2$
+$\dot{y_2}  =  -k_2x_2 + \mu_2 y_2 + \sigma x_2^2y_2  + c_{12} x_1^2y_2  + \xi y_2 (x_2^2+y_2^2)^2$
 """
 
-# ╔═╡ fa327c6a-823a-4dd1-8df6-58481945d910
-flux2d_nullclines(vdp5!,[x0_vdp5;y0_vdp5],20.0,[-0.1,-1.5,0.1],xlims=[-7,7],ylims=[-5,5],title="Van der Pol 5")
+# ╔═╡ fcf72134-1501-4e29-8ad5-b8ceb7f19ff3
+function dhopf(u,p)
+	@unpack μ1,μ2,k1,k2,σ2,c12,c21,ξ = p
+	[
+		u[2]
+		-k1*u[1] + u[2]*(μ1 + σ2*u[1]^2 + c21*u[3]^2 + ξ*(u[1]^2+u[2]^2)^2)
+		u[4]
+		-k2*u[3] + u[4]*(μ2 + σ2*u[3]^2 + c21*u[1]^2 + ξ*(u[3]^2+u[4]^2)^2)
+	]
+end
 
-# ╔═╡ 4f04d9a1-3e58-4ead-b5c4-daf4d88e9f29
+# ╔═╡ d9c3004c-3d87-4912-b05f-17130e6e1394
+par_d = (μ1=-0.1,μ2=0.1,k1=0.3,k2=0.2,σ2=-0.2,c12=0.1,c21=-0.1,ξ=-0.1)
+
+# ╔═╡ 84aff82e-42db-486f-8081-8ac718f54a1d
+prob2 = BifurcationProblem(dhopf, [0.1; 0.0; 0.1; 0.0], par_d, (@lens _.μ1),record_from_solution = (x, p) -> x[1])
+
+# ╔═╡ eb6a78df-d641-415c-b05b-0ae9f53f38de
+opts_br2 = ContinuationPar(p_max = 0.3, p_min = -0.3,dsmax=0.01,dsmin=1e-4,ds=1e-4,max_steps = 100,n_inversion = 8);
+
+# ╔═╡ 0df18c34-9d72-4893-9245-abee78baeebd
+br2 = continuation(prob2, PALC(), opts_br2, bothside = true)
+
+# ╔═╡ 7700601d-f833-4448-849e-77874e48eb87
+get_normal_form(br2, 2)
+
+# ╔═╡ 70a46d87-f15b-4ca1-8376-44cc82e90b6d
+hopf_1 = continuation(br2, 2, (@lens _.μ2), opts_br2, normC = norminf, bothside = true, update_minaug_every_step = 2, detect_codim2_bifurcation = 2)
+
+# ╔═╡ 60bef430-7604-4c6d-bf30-8cd1836d0534
+get_normal_form(hopf_1, 2)
+
+# ╔═╡ 7595b6e3-ddf5-44ef-96ea-087f6cd80b71
+plot(hopf_1,branchlabel = "Hopf1")
+
+# ╔═╡ 0675eeb4-09a8-41dd-9257-a9e843dd54f7
+opts_ns = ContinuationPar(opts_br2, detect_bifurcation = 1, max_steps = 60, detect_event = 0, ds = 0.001);
+
+# ╔═╡ 458beebf-9853-4559-8498-7c307cee03d8
+ns_po1 = continuation(hopf_1, 2, opts_ns, PeriodicOrbitOCollProblem(20, 3, update_section_every_step = 1);
+		detect_codim2_bifurcation = 0, normC = norminf,	δp = 0.02, update_minaug_every_step = 1, whichns = 1,jacobian_ma = :minaug)
+
+# ╔═╡ e8fdbb00-3b6e-4204-ae37-977b0f182c8e
+ns_po2 = continuation(hopf_1, 2, opts_ns, PeriodicOrbitOCollProblem(20, 3, update_section_every_step = 1);
+		detect_codim2_bifurcation = 0, normC = norminf,	δp = 0.02, update_minaug_every_step = 1, whichns = 2,jacobian_ma = :minaug)
+
+# ╔═╡ 3812323a-b87d-4ea8-8dee-72f0720b5b53
+begin
+	plot(hopf_1,branchlabel = "Hopf 1")
+	plot!(ns_po1,branchlabel = "Neimark Sacker 1")
+	plot!(ns_po2,branchlabel = "Neimark Sacker 2")
+end	
+
+# ╔═╡ 53b50ba4-a968-4b6c-8496-031b5d72f558
 html"""
 <style>
 main {
     max-width: 1200px;
 }
 input[type*="range"] {
-	width: 90%;
+	width: 40%;
 }
 </style>
 """
 
+# ╔═╡ c59e2248-b18b-4ea1-a8ea-9b300de44f13
+sp = html"&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp";
+
+# ╔═╡ e599e241-6992-4ffa-9e66-b936d9fdb687
+md"""
+k : $(@bind k Slider(0.1:0.1:2.0,default=0.2;show_value=true)) $sp
+σ : $(@bind σ Slider(-0.5:0.01:0.5,default=-0.5;show_value=true))  
+"""
+
+# ╔═╡ e2336e91-4fd7-4591-b664-a5ba1d35b426
+par_b = (μ = -0.1, k = k, σ = σ, ξ = -0.1)
+
+# ╔═╡ a2b6dda7-07a4-4118-bd5e-f854fab20afc
+prob = BifurcationProblem(bautin, [0.1; 0.0], par_b, (@lens _.μ),record_from_solution = (x, p) -> x[1])
+
+# ╔═╡ c8148366-9fab-4ef4-8ac8-0bb6421ce68e
+br = continuation(prob, PALC(), opts_br, bothside = true)
+
+# ╔═╡ 88f017da-c582-4725-ada8-5d4f56df0c1b
+get_normal_form(br, 2)
+
+# ╔═╡ e2eced74-b68f-4bfa-893a-ac95624770be
+br_po = continuation(br, 2, opts_br,PeriodicOrbitOCollProblem(20, 8))
+
+# ╔═╡ 8ec1e382-a199-4081-9d2e-d86969c2a94c
+plot(br, br_po, branchlabel = ["equilibria", "periodic orbits"])
+
+# ╔═╡ 8a409ec0-664a-4bc5-a155-a6b4d22c967c
+hopf_codim2 = continuation(br, 2, (@lens _.σ), opts_cd2, normC = norminf, bothside = true, update_minaug_every_step = 2, detect_codim2_bifurcation = 2)
+
+# ╔═╡ a9ce81fa-0c3b-4838-b4e2-de27471014bf
+get_normal_form(hopf_codim2, 2)
+
+# ╔═╡ a0cf197d-1601-4c28-97df-02a62226453c
+plot(hopf_codim2,branchlabel = "Hopf")
+
+# ╔═╡ 7146a60c-8e85-421d-88c0-015ae14db992
+fold_po = continuation(hopf_codim2, 2, opts_fold_po,
+		PeriodicOrbitOCollProblem(20, 3, meshadapt = false);
+		normC = norminf,
+		δp = 0.02,
+		update_minaug_every_step = 0,
+		jacobian_ma = :minaug,
+		verbosity = 0, plot = false,
+	)
+
+# ╔═╡ 19662dc6-dc1e-443b-afbb-c063c0357d9c
+plot!(fold_po,branchlabel = "Saddle_Node PO")
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 
 [compat]
+BifurcationKit = "~0.3.3"
 DifferentialEquations = "~7.13.0"
+Parameters = "~0.12.3"
 Plots = "~1.40.3"
 PlutoUI = "~0.7.58"
+Setfield = "~1.1.1"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -467,7 +196,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "74b14b71c5ccb736352a89b603dd4bdbac88e334"
+project_hash = "3099cc2aada2cc87d829619765ff73912f166322"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "016833eb52ba2d6bea9fcb50ca295980e728ee24"
@@ -521,6 +250,18 @@ git-tree-sha1 = "62e51b39331de8911e4a7ff6f5aaf38a5f4cc0ae"
 uuid = "ec485272-7323-5ecc-a04f-4719b315124d"
 version = "0.2.0"
 
+[[deps.Arpack]]
+deps = ["Arpack_jll", "Libdl", "LinearAlgebra", "Logging"]
+git-tree-sha1 = "91ca22c4b8437da89b030f08d71db55a379ce958"
+uuid = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
+version = "0.5.3"
+
+[[deps.Arpack_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "OpenBLAS_jll", "Pkg"]
+git-tree-sha1 = "5ba6c757e8feccf03a1554dfaf3e26b3cfc7fd5e"
+uuid = "68821587-b530-5797-8361-c406ea357684"
+version = "3.5.1+1"
+
 [[deps.ArrayInterface]]
 deps = ["Adapt", "LinearAlgebra", "SparseArrays", "SuiteSparse"]
 git-tree-sha1 = "44691067188f6bd1b2289552a23e4b7572f4528d"
@@ -549,9 +290,9 @@ version = "7.9.0"
 
 [[deps.ArrayLayouts]]
 deps = ["FillArrays", "LinearAlgebra"]
-git-tree-sha1 = "6404a564c24a994814106c374bec893195e19bac"
+git-tree-sha1 = "0330bc3e828a05d1073553fb56f9695d73077370"
 uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
-version = "1.8.0"
+version = "1.9.1"
 weakdeps = ["SparseArrays"]
 
     [deps.ArrayLayouts.extensions]
@@ -573,6 +314,12 @@ weakdeps = ["SparseArrays"]
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
+[[deps.BifurcationKit]]
+deps = ["ArnoldiMethod", "Arpack", "BlockArrays", "DataStructures", "Dates", "DocStringExtensions", "FastGaussQuadrature", "ForwardDiff", "IterativeSolvers", "KrylovKit", "LinearAlgebra", "LinearMaps", "Parameters", "Printf", "RecipesBase", "RecursiveArrayTools", "Reexport", "Requires", "SciMLBase", "Setfield", "SparseArrays", "StructArrays"]
+git-tree-sha1 = "513c88c2f38634c56c8058a72edc927225a8e32c"
+uuid = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
+version = "0.3.3"
+
 [[deps.BitFlags]]
 git-tree-sha1 = "2dc09997850d68179b69dafb58ae806167a32b1b"
 uuid = "d1d4a3ce-64b1-5f1a-9ba4-7e7e69966f35"
@@ -583,6 +330,12 @@ deps = ["Static"]
 git-tree-sha1 = "0c5f81f47bbbcf4aea7b2959135713459170798b"
 uuid = "62783981-4cbd-42fc-bca8-16325de8dc4b"
 version = "0.1.5"
+
+[[deps.BlockArrays]]
+deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra"]
+git-tree-sha1 = "9a9610fbe5779636f75229e423e367124034af41"
+uuid = "8e7c35d0-a365-5155-bbbb-fb81a777f24e"
+version = "0.16.43"
 
 [[deps.BoundaryValueDiffEq]]
 deps = ["ADTypes", "Adapt", "ArrayInterface", "BandedMatrices", "ConcreteStructs", "DiffEqBase", "FastAlmostBandedMatrices", "FastClosures", "ForwardDiff", "LinearAlgebra", "LinearSolve", "Logging", "NonlinearSolve", "OrdinaryDiffEq", "PreallocationTools", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "Setfield", "SparseArrays", "SparseDiffTools"]
@@ -655,9 +408,9 @@ version = "3.24.0"
 
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
-git-tree-sha1 = "eb7f0f8307f71fac7c606984ea5fb2817275d6e4"
+git-tree-sha1 = "b10d0b65641d57b8b4d5e234446582de5047050d"
 uuid = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
-version = "0.11.4"
+version = "0.11.5"
 
 [[deps.ColorVectorSpace]]
 deps = ["ColorTypes", "FixedPointNumbers", "LinearAlgebra", "Requires", "Statistics", "TensorCore"]
@@ -736,9 +489,9 @@ version = "1.5.5"
     StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [[deps.Contour]]
-git-tree-sha1 = "d05d9e7b7aedff4e5b51a029dced05cfb6125781"
+git-tree-sha1 = "439e35b0b36e2e5881738abc8857bd92ad6ff9a8"
 uuid = "d38c429a-6771-53c6-b99e-75d170b6e991"
-version = "0.6.2"
+version = "0.6.3"
 
 [[deps.CpuId]]
 deps = ["Markdown"]
@@ -810,9 +563,9 @@ version = "6.149.0"
 
 [[deps.DiffEqCallbacks]]
 deps = ["DataStructures", "DiffEqBase", "ForwardDiff", "Functors", "LinearAlgebra", "Markdown", "NonlinearSolve", "Parameters", "RecipesBase", "RecursiveArrayTools", "SciMLBase", "StaticArraysCore"]
-git-tree-sha1 = "e73f4d7e780cf78eea9f13dd6eaccb0ef3c6a241"
+git-tree-sha1 = "2df0433103c89ee2dad56f4ef9c7755521464a39"
 uuid = "459566f4-90b8-5000-8ac3-15dfb0a30def"
-version = "3.4.1"
+version = "3.5.0"
 weakdeps = ["OrdinaryDiffEq", "Sundials"]
 
 [[deps.DiffEqNoiseProcess]]
@@ -965,6 +718,12 @@ git-tree-sha1 = "acebe244d53ee1b461970f8910c235b259e772ef"
 uuid = "9aa1b823-49e4-5ca5-8b0f-3971ec8bab6a"
 version = "0.3.2"
 
+[[deps.FastGaussQuadrature]]
+deps = ["LinearAlgebra", "SpecialFunctions", "StaticArrays"]
+git-tree-sha1 = "fd923962364b645f3719855c88f7074413a6ad92"
+uuid = "442a2c76-b920-505d-bb47-c5924d526838"
+version = "1.0.2"
+
 [[deps.FastLapackInterface]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "0a59c7d1002f3131de53dc4568a47d15a44daef7"
@@ -975,10 +734,10 @@ version = "2.0.2"
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
 [[deps.FillArrays]]
-deps = ["LinearAlgebra", "Random"]
-git-tree-sha1 = "5b93957f6dcd33fc343044af3d48c215be2562f1"
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "bfe82a708416cf00b73a3198db0859c82f741558"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "1.9.3"
+version = "1.10.0"
 weakdeps = ["PDMats", "SparseArrays", "Statistics"]
 
     [deps.FillArrays.extensions]
@@ -1054,9 +813,9 @@ version = "0.1.3"
 
 [[deps.Functors]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "8ae30e786837ce0a24f5e2186938bf3251ab94b2"
+git-tree-sha1 = "d3e63d9fa13f8eaa2f06f64949e2afc593ff52c2"
 uuid = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
-version = "0.4.8"
+version = "0.4.10"
 
 [[deps.Future]]
 deps = ["Random"]
@@ -1198,6 +957,12 @@ git-tree-sha1 = "630b497eafcc20001bba38a4651b327dcfc491d2"
 uuid = "92d709cd-6900-40b7-9082-c6be49f344b6"
 version = "0.2.2"
 
+[[deps.IterativeSolvers]]
+deps = ["LinearAlgebra", "Printf", "Random", "RecipesBase", "SparseArrays"]
+git-tree-sha1 = "59545b0a2b27208b0650df0a46b8e3019f85055b"
+uuid = "42fd0dbc-a981-5370-80f2-aaf504508153"
+version = "0.9.4"
+
 [[deps.IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
 uuid = "82899510-4779-5014-852e-03e436cf321d"
@@ -1248,6 +1013,12 @@ deps = ["LinearAlgebra", "Printf", "SparseArrays"]
 git-tree-sha1 = "8a6837ec02fe5fb3def1abc907bb802ef11a0729"
 uuid = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
 version = "0.9.5"
+
+[[deps.KrylovKit]]
+deps = ["ChainRulesCore", "GPUArraysCore", "LinearAlgebra", "Printf"]
+git-tree-sha1 = "5cebb47f472f086f7dd31fb8e738a8db728f1f84"
+uuid = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
+version = "0.6.1"
 
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1300,9 +1071,9 @@ version = "0.1.15"
 
 [[deps.LazyArrays]]
 deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra", "MacroTools", "MatrixFactorizations", "SparseArrays"]
-git-tree-sha1 = "9cfca23ab83b0dfac93cb1a1ef3331ab9fe596a5"
+git-tree-sha1 = "30fc74040b7507231ba889e363fd1135f5067395"
 uuid = "5078a376-72f3-5289-bfd5-ec5146d43c02"
-version = "1.8.3"
+version = "1.9.1"
 weakdeps = ["StaticArrays"]
 
     [deps.LazyArrays.extensions]
@@ -1403,6 +1174,18 @@ version = "7.2.0"
 deps = ["Libdl", "OpenBLAS_jll", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
+[[deps.LinearMaps]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "9948d6f8208acfebc3e8cf4681362b2124339e7e"
+uuid = "7a12625a-238d-50fd-b39a-03d52299707e"
+version = "3.11.2"
+weakdeps = ["ChainRulesCore", "SparseArrays", "Statistics"]
+
+    [deps.LinearMaps.extensions]
+    LinearMapsChainRulesCoreExt = "ChainRulesCore"
+    LinearMapsSparseArraysExt = "SparseArrays"
+    LinearMapsStatisticsExt = "Statistics"
+
 [[deps.LinearSolve]]
 deps = ["ArrayInterface", "ChainRulesCore", "ConcreteStructs", "DocStringExtensions", "EnumX", "FastLapackInterface", "GPUArraysCore", "InteractiveUtils", "KLU", "Krylov", "LazyArrays", "Libdl", "LinearAlgebra", "MKL_jll", "Markdown", "PrecompileTools", "Preferences", "RecursiveFactorization", "Reexport", "SciMLBase", "SciMLOperators", "Setfield", "SparseArrays", "Sparspak", "StaticArraysCore", "UnPack"]
 git-tree-sha1 = "775e5e5d9ace42ef8deeb236587abc69e70dc455"
@@ -1502,9 +1285,9 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[deps.MatrixFactorizations]]
 deps = ["ArrayLayouts", "LinearAlgebra", "Printf", "Random"]
-git-tree-sha1 = "78f6e33434939b0ac9ba1df81e6d005ee85a7396"
+git-tree-sha1 = "fd4530d3c921d85c2fefce7e75d34d7acfefca61"
 uuid = "a3b82374-2e81-5b9e-98ce-41277c0e4c87"
-version = "2.1.0"
+version = "2.1.1"
 
 [[deps.MaybeInplace]]
 deps = ["ArrayInterface", "LinearAlgebra", "MacroTools", "SparseArrays"]
@@ -1530,9 +1313,9 @@ version = "0.3.2"
 
 [[deps.Missings]]
 deps = ["DataAPI"]
-git-tree-sha1 = "f66bdc5de519e8f8ae43bdc598782d35a25b1272"
+git-tree-sha1 = "ec4f7fbeab05d7747bdf98eb74d130a2a2ed298d"
 uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
-version = "1.1.0"
+version = "1.2.0"
 
 [[deps.Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
@@ -1570,9 +1353,9 @@ version = "1.2.0"
 
 [[deps.NonlinearSolve]]
 deps = ["ADTypes", "ArrayInterface", "ConcreteStructs", "DiffEqBase", "FastBroadcast", "FastClosures", "FiniteDiff", "ForwardDiff", "LazyArrays", "LineSearches", "LinearAlgebra", "LinearSolve", "MaybeInplace", "PrecompileTools", "Preferences", "Printf", "RecursiveArrayTools", "Reexport", "SciMLBase", "SimpleNonlinearSolve", "SparseArrays", "SparseDiffTools", "StaticArraysCore", "TimerOutputs"]
-git-tree-sha1 = "c32743c2321e99adf8bbe03145ce8e2bf2fcfbf9"
+git-tree-sha1 = "b9e12aa04c90a05d2aaded6f7c4d8b39e77751db"
 uuid = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
-version = "3.9.0"
+version = "3.9.1"
 
     [deps.NonlinearSolve.extensions]
     NonlinearSolveBandedMatricesExt = "BandedMatrices"
@@ -1644,10 +1427,10 @@ uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
 version = "0.5.5+0"
 
 [[deps.Optim]]
-deps = ["Compat", "FillArrays", "ForwardDiff", "LineSearches", "LinearAlgebra", "NLSolversBase", "NaNMath", "PackageExtensionCompat", "Parameters", "PositiveFactorizations", "Printf", "SparseArrays", "StatsBase"]
-git-tree-sha1 = "d1223e69af90b6d26cea5b6f3b289b3148ba702c"
+deps = ["Compat", "FillArrays", "ForwardDiff", "LineSearches", "LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "PositiveFactorizations", "Printf", "SparseArrays", "StatsBase"]
+git-tree-sha1 = "d9b79c4eed437421ac4285148fcadf42e0700e89"
 uuid = "429524aa-4258-5aef-a3af-852621145aeb"
-version = "1.9.3"
+version = "1.9.4"
 
     [deps.Optim.extensions]
     OptimMOIExt = "MathOptInterface"
@@ -1763,9 +1546,9 @@ version = "0.4.4"
 
 [[deps.Polyester]]
 deps = ["ArrayInterface", "BitTwiddlingConvenienceFunctions", "CPUSummary", "IfElse", "ManualMemory", "PolyesterWeave", "Requires", "Static", "StaticArrayInterface", "StrideArraysCore", "ThreadingUtilities"]
-git-tree-sha1 = "5d8a46101b622927a87fe3553ea697e606d9a3c5"
+git-tree-sha1 = "09f59c6dda37c7f73efddc5bdf6f92bc940eb484"
 uuid = "f517fe37-dbe3-4b94-8317-1923a5111588"
-version = "0.7.11"
+version = "0.7.12"
 
 [[deps.PolyesterWeave]]
 deps = ["BitTwiddlingConvenienceFunctions", "CPUSummary", "IfElse", "Static", "ThreadingUtilities"]
@@ -2132,9 +1915,9 @@ version = "1.7.0"
 
 [[deps.StatsBase]]
 deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "1d77abd07f617c4868c33d4f5b9e1dbb2643c9cf"
+git-tree-sha1 = "5cf7606d6cef84b543b483848d4ae08ad9832b21"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.34.2"
+version = "0.34.3"
 
 [[deps.StatsFuns]]
 deps = ["HypergeometricFunctions", "IrrationalConstants", "LogExpFunctions", "Reexport", "Rmath", "SpecialFunctions"]
@@ -2164,6 +1947,19 @@ deps = ["ArrayInterface", "CloseOpenIntervals", "IfElse", "LayoutPointers", "Man
 git-tree-sha1 = "d6415f66f3d89c615929af907fdc6a3e17af0d8c"
 uuid = "7792a7ef-975c-4747-a70f-980b88e8d1da"
 version = "0.5.2"
+
+[[deps.StructArrays]]
+deps = ["ConstructionBase", "DataAPI", "Tables"]
+git-tree-sha1 = "f4dc295e983502292c4c3f951dbb4e985e35b3be"
+uuid = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
+version = "0.6.18"
+weakdeps = ["Adapt", "GPUArraysCore", "SparseArrays", "StaticArrays"]
+
+    [deps.StructArrays.extensions]
+    StructArraysAdaptExt = "Adapt"
+    StructArraysGPUArraysCoreExt = "GPUArraysCore"
+    StructArraysSparseArraysExt = "SparseArrays"
+    StructArraysStaticArraysExt = "StaticArrays"
 
 [[deps.SuiteSparse]]
 deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
@@ -2611,42 +2407,39 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═17ccb720-4b26-4279-8a40-0e34a33d835d
-# ╠═78c1fc6a-a145-4e30-9a9f-d4c66e1a591a
-# ╠═72fa8994-47dc-4e0c-80fd-021f5fc629e9
-# ╟─87c571dc-db6a-4cfe-9581-2b12d3f2ee91
-# ╟─f19f478a-8428-4b25-9a10-9c4b85a3b096
-# ╠═cdc8339f-138f-4eb7-a88d-7ca495cc453f
-# ╠═0ea1cdee-a4a3-49b3-a599-7d3f3449855b
-# ╠═2f7d77f0-2eff-43ff-93d4-cba683e6030c
-# ╠═03ff660e-4b24-4721-b9f3-13d107600d4a
-# ╠═83131186-2dbb-4e2c-9d7a-6b2d829e2222
-# ╟─818e26ce-d164-4bad-8e31-7a1bf6be9ef3
-# ╟─136021df-bc6b-4e0c-b136-51ecbe46c2ff
-# ╠═13cfddda-608e-4cec-8acb-2f129c3cee93
-# ╠═d1c1644b-17e1-4c1d-aa2b-60cae1ebf5cd
-# ╟─465c2e99-b477-47a8-8503-4f356bf1dd7b
-# ╠═b141b69f-2c2c-4928-94fd-3f1ae92d38ac
-# ╠═835a9bda-3708-41af-bdab-1b8e72aac4aa
-# ╠═df7cab14-abe1-4f93-aec8-5422fea44fde
-# ╠═163d352d-ce42-4828-a418-520033c23719
-# ╟─e8947aad-3033-45e1-b9be-c85950b82fef
-# ╠═ea88f136-6d7d-4b0a-b4d9-2f4e898930af
-# ╟─5a415de4-126d-462c-9eb0-ee06500dae22
-# ╠═a86dcb92-ffc6-44f5-9be0-d787b592cb44
-# ╠═678cc7eb-8e86-47ec-8176-35d30eff5587
-# ╟─66497e63-8efd-472b-aa35-50c826917eb2
-# ╠═35f0087d-28fc-42b8-baeb-c18df8a149fd
-# ╠═fdb0d8bc-d780-4b81-9e54-19510d70ed76
-# ╟─7fb98f93-be03-43d3-895c-c72f58f09d27
-# ╠═216ef632-f17a-4f28-9aad-04364803bcb7
-# ╟─b81e8195-10ac-467f-b99f-c881a4f3d681
-# ╠═fe8fe3ec-34f2-40e8-a48e-c5d9cbc50985
-# ╠═362650ef-1899-4e53-93c0-c5761bdf47b8
-# ╠═55f33551-4a7f-42c0-a049-deeaa3c76826
-# ╠═55557142-a9e3-4f3f-9827-eed2678e0c40
-# ╟─14090140-770f-45ba-9277-6310263ef643
-# ╠═fa327c6a-823a-4dd1-8df6-58481945d910
-# ╟─4f04d9a1-3e58-4ead-b5c4-daf4d88e9f29
+# ╠═69f343ec-574b-4252-9134-b30bbd74effb
+# ╟─787ce7fe-8a11-48c3-aca9-9a4c0ac4dbd2
+# ╠═0d7be9cf-763d-4781-b747-ee4f99fabeee
+# ╠═e2336e91-4fd7-4591-b664-a5ba1d35b426
+# ╠═a2b6dda7-07a4-4118-bd5e-f854fab20afc
+# ╠═f717ab21-53ec-4bb6-8fc1-d20521cc5d7c
+# ╠═c8148366-9fab-4ef4-8ac8-0bb6421ce68e
+# ╠═88f017da-c582-4725-ada8-5d4f56df0c1b
+# ╠═e2eced74-b68f-4bfa-893a-ac95624770be
+# ╠═8ec1e382-a199-4081-9d2e-d86969c2a94c
+# ╠═e599e241-6992-4ffa-9e66-b936d9fdb687
+# ╠═2e254f9c-d846-40b7-94cb-c346bfc07c75
+# ╠═8a409ec0-664a-4bc5-a155-a6b4d22c967c
+# ╠═a9ce81fa-0c3b-4838-b4e2-de27471014bf
+# ╠═a0cf197d-1601-4c28-97df-02a62226453c
+# ╠═d327bb35-d502-46ef-8001-a1715926bc20
+# ╠═7146a60c-8e85-421d-88c0-015ae14db992
+# ╠═19662dc6-dc1e-443b-afbb-c063c0357d9c
+# ╠═72b130b2-ce95-4e32-af95-a3c5c20e87dd
+# ╠═fcf72134-1501-4e29-8ad5-b8ceb7f19ff3
+# ╠═d9c3004c-3d87-4912-b05f-17130e6e1394
+# ╠═84aff82e-42db-486f-8081-8ac718f54a1d
+# ╠═eb6a78df-d641-415c-b05b-0ae9f53f38de
+# ╠═0df18c34-9d72-4893-9245-abee78baeebd
+# ╠═7700601d-f833-4448-849e-77874e48eb87
+# ╠═70a46d87-f15b-4ca1-8376-44cc82e90b6d
+# ╠═60bef430-7604-4c6d-bf30-8cd1836d0534
+# ╠═7595b6e3-ddf5-44ef-96ea-087f6cd80b71
+# ╠═0675eeb4-09a8-41dd-9257-a9e843dd54f7
+# ╠═458beebf-9853-4559-8498-7c307cee03d8
+# ╠═e8fdbb00-3b6e-4204-ae37-977b0f182c8e
+# ╠═3812323a-b87d-4ea8-8dee-72f0720b5b53
+# ╟─53b50ba4-a968-4b6c-8496-031b5d72f558
+# ╟─c59e2248-b18b-4ea1-a8ea-9b300de44f13
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
