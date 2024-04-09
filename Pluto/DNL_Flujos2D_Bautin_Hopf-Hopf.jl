@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.39
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -186,8 +186,8 @@ md"""
 # Bautin acopladas (Doble Hopf)
 
 $\dot{x_1}  =  y_1$
-$\dot{x_2}  =  y_2$
 $\dot{y_1}  =  -k_1x_1 + \mu_1 y_1 + \sigma x_1^2y_1  + c_{21} x_2^2y_1  + \xi y_1 (x_1^2+y_1^2)^2$
+$\dot{x_2}  =  y_2$
 $\dot{y_2}  =  -k_2x_2 + \mu_2 y_2 + \sigma x_2^2y_2  + c_{12} x_1^2y_2  + \xi y_2 (x_2^2+y_2^2)^2$
 
 
@@ -199,14 +199,14 @@ function dhopf!(du,u,p,t)
 	du[1] = u[2]
 	du[2] = -k1*u[1] + u[2]*(μ1 + σ*u[1]^2 + c21*u[3]^2 + ξ*(u[1]^2+u[2]^2)^2)
 	du[3] = u[4]
-	du[4] = -k2*u[3] + u[4]*(μ2 + σ*u[3]^2 + c21*u[1]^2 + ξ*(u[3]^2+u[4]^2)^2)
+	du[4] = -k2*u[3] + u[4]*(μ2 + σ*u[3]^2 + c12*u[1]^2 + ξ*(u[3]^2+u[4]^2)^2)
 end
 
 # ╔═╡ 53b50ba4-a968-4b6c-8496-031b5d72f558
 html"""
 <style>
 main {
-    max-width: 1200px;
+    max-width: 1000px;
 }
 input[type*="range"] {
 	width: 40%;
@@ -263,6 +263,23 @@ begin
 	plot(p1b,p2b,layout=(1,2),size = (900,450),title="Double Hopf")
 end	
 
+# ╔═╡ 32cec679-0d93-4d26-a736-e0e6c1058f89
+begin
+	plot(sol1,idxs=(0,1),size=(1000,300),label="x1")
+	plot!(sol1,idxs=(0,3),size=(1000,300),label="x2")
+end	
+
+# ╔═╡ eebdc7e9-1ecc-481f-936e-9ea0da2332ea
+ 
+md"""
+x0 $(@bind x0_reed Slider(-1.0:0.01:2.0,default=0.1;show_value=true)) $sp 
+y0 $(@bind y0_reed Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
+μ : $(@bind μ_reed Slider(-1.0:0.01:1.0,default=0.1;show_value=true)) $sp 
+k $(@bind k_reed Slider(0.0:0.1:1.0,default=0.1;show_value=true)) \
+v0 : $(@bind v0 Slider(-1.0:0.01:1.0,default=0.1;show_value=true)) $sp
+tmax : $(@bind tmax_reed Slider(10:10:300,default=0.1;show_value=true)) 
+"""	
+
 # ╔═╡ Cell order:
 # ╠═bc0b7062-f045-11ee-260f-f99d879c90be
 # ╠═1d36f38e-d842-47f1-8577-a16bb9a73d76
@@ -271,12 +288,14 @@ end
 # ╟─c2177a4c-cff4-4c7a-86f4-629b60e13a63
 # ╠═0d7be9cf-763d-4781-b747-ee4f99fabeee
 # ╠═cc1e8cbc-1088-4ae0-bad0-8dcc83b98f22
-# ╟─f3ac4ce9-d182-4b75-875e-274ee2a7f470
+# ╠═f3ac4ce9-d182-4b75-875e-274ee2a7f470
 # ╠═5621e2f8-69b1-4bcc-a347-704d6e1bc235
 # ╠═c8148366-9fab-4ef4-8ac8-0bb6421ce68e
 # ╟─ef53daf7-7d49-4763-8f3c-01aec8a105f1
 # ╠═bdcf36f8-a090-4a8a-a3a3-838defcc5b78
-# ╠═b07e11bc-635f-4ab6-9ec3-b4c89d0347be
+# ╟─b07e11bc-635f-4ab6-9ec3-b4c89d0347be
 # ╟─944a42df-4696-41f1-bc48-da1adaac122b
+# ╠═32cec679-0d93-4d26-a736-e0e6c1058f89
+# ╟─eebdc7e9-1ecc-481f-936e-9ea0da2332ea
 # ╟─53b50ba4-a968-4b6c-8496-031b5d72f558
 # ╟─c59e2248-b18b-4ea1-a8ea-9b300de44f13

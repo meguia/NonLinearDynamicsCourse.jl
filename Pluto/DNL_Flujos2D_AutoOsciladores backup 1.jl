@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.39
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -14,17 +14,17 @@ macro bind(def, element)
     end
 end
 
-# ╔═╡ 17ccb720-4b26-4279-8a40-0e34a33d835d
-push!(LOAD_PATH, joinpath(dirname(pwd()) , "src"))
-
-# ╔═╡ 72fa8994-47dc-4e0c-80fd-021f5fc629e9
-using NonLinearDynamicsCourse, PlutoUI, DifferentialEquations, Plots
-
 # ╔═╡ 78c1fc6a-a145-4e30-9a9f-d4c66e1a591a
 # ╠═╡ disabled = true
 #=╠═╡
 import Pkg; Pkg.add("ForwardDiff"), Pkg.add("Plots"), Pkg.add("PlutoUI"), Pkg.add("DifferentialEquations"), Pkg.add("IntervalRootFinding"), Pkg.add("StaticArrays"), Pkg.add("LinearAlgebra"), Pkg.add("Distances")
   ╠═╡ =#
+
+# ╔═╡ 17ccb720-4b26-4279-8a40-0e34a33d835d
+push!(LOAD_PATH, joinpath(dirname(pwd()) , "src"))
+
+# ╔═╡ 72fa8994-47dc-4e0c-80fd-021f5fc629e9
+using NonLinearDynamicsCourse, PlutoUI, DifferentialEquations, Plots
 
 # ╔═╡ 87c571dc-db6a-4cfe-9581-2b12d3f2ee91
 md"""
