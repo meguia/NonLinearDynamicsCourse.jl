@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.39
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -14,8 +14,8 @@ macro bind(def, element)
     end
 end
 
-# ╔═╡ 78c1fc6a-a145-4e30-9a9f-d4c66e1a591a
-import Pkg; Pkg.add("ForwardDiff"), Pkg.add("Plots"), Pkg.add("PlutoUI"), Pkg.add("DifferentialEquations"), Pkg.add("IntervalRootFinding"), Pkg.add("StaticArrays"), Pkg.add("LinearAlgebra"), Pkg.add("Distances")
+# ╔═╡ 87fb3454-1e1f-47b1-92c8-19300bca71fb
+import Pkg; Pkg.activate(joinpath(dirname(pwd()) , "src"))
 
 # ╔═╡ 17ccb720-4b26-4279-8a40-0e34a33d835d
 push!(LOAD_PATH, joinpath(dirname(pwd()) , "src"))
@@ -298,6 +298,34 @@ tmax : $(@bind tmax_vreed Slider(10:10:300.0,default=10.0;show_value=true))
 # ╔═╡ ea88f136-6d7d-4b0a-b4d9-2f4e898930af
 flux2d_nullclines(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed],xlims=[-3,3],ylims=[-2,2],title="Lengüeta (Rayleigh) Modificada")
 
+# ╔═╡ b9cdbe39-da33-47db-8a54-3e482e0e924b
+function freed_snlc!(du,u,p,t)
+	(μ,K,ω,a) = p
+	v = (u[3]-cos(u[1]))
+	du[1] = ω-a*sin(u[1])
+    du[2] = u[3] 
+	du[3] = v*(μ-v*v)-K*u[2]
+end
+
+# ╔═╡ 7cec5f3e-3384-47a5-9fd2-62385d9feef8
+md"""
+x0 $(@bind x0_vreeds Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
+y0 $(@bind y0_vreeds Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
+μ : $(@bind μ_vreeds Slider(-0.1:0.01:10.0,default=-0.1;show_value=true)) \
+k : $(@bind k_vreeds Slider(0.1:0.01:3.0,default=-0.1;show_value=true)) \
+ω : $(@bind ω_s Slider(0.0:0.001:1.0,default=0.1;show_value=true)) \
+a : $(@bind a_s Slider(0.0:0.001:1.0,default=0.1;show_value=true))
+tmax : $(@bind tmax_vreeds Slider(10:10:300.0,default=10.0;show_value=true)) 
+"""
+
+# ╔═╡ 6b2d4aef-ace7-4848-abab-7819ed746b66
+begin
+	sols=solve(ODEProblem(freed_snlc!,[0.1, x0_vreeds,y0_vreeds],(0,tmax_vreeds),[μ_vreeds,k_vreeds,ω_s,a_s]))
+    p1s=plot(sols,idxs=(0,1),xlabel="t",ylabel="x")
+    p2s=plot(sols,idxs=(2,3),legend=false,xlabel="x",ylabel="y")
+    plot(p1s,p2s,layout=(1,2),size=(700,300),fmt=:png,title="Lengueta modulada")
+end	
+
 # ╔═╡ 5a415de4-126d-462c-9eb0-ee06500dae22
 md"""
 # Oscilador Frotado (violin puntual)
@@ -428,7 +456,7 @@ input[type*="range"] {
 
 # ╔═╡ Cell order:
 # ╠═17ccb720-4b26-4279-8a40-0e34a33d835d
-# ╠═78c1fc6a-a145-4e30-9a9f-d4c66e1a591a
+# ╠═87fb3454-1e1f-47b1-92c8-19300bca71fb
 # ╠═72fa8994-47dc-4e0c-80fd-021f5fc629e9
 # ╟─87c571dc-db6a-4cfe-9581-2b12d3f2ee91
 # ╟─f19f478a-8428-4b25-9a10-9c4b85a3b096
@@ -447,8 +475,11 @@ input[type*="range"] {
 # ╠═835a9bda-3708-41af-bdab-1b8e72aac4aa
 # ╠═df7cab14-abe1-4f93-aec8-5422fea44fde
 # ╠═163d352d-ce42-4828-a418-520033c23719
-# ╠═e8947aad-3033-45e1-b9be-c85950b82fef
+# ╟─e8947aad-3033-45e1-b9be-c85950b82fef
 # ╠═ea88f136-6d7d-4b0a-b4d9-2f4e898930af
+# ╠═b9cdbe39-da33-47db-8a54-3e482e0e924b
+# ╠═7cec5f3e-3384-47a5-9fd2-62385d9feef8
+# ╠═6b2d4aef-ace7-4848-abab-7819ed746b66
 # ╟─5a415de4-126d-462c-9eb0-ee06500dae22
 # ╠═a86dcb92-ffc6-44f5-9be0-d787b592cb44
 # ╠═678cc7eb-8e86-47ec-8176-35d30eff5587
