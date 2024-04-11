@@ -20,6 +20,9 @@ using DifferentialEquations, Plots, Parameters, Setfield, BifurcationKit, Hclini
 # ╔═╡ 56e6977a-641d-433a-9d6e-731db0ba48e3
 using JLD2
 
+# ╔═╡ 40f50080-9a21-434a-9d25-f8cd47afdfb7
+using PolynomialRoots
+
 # ╔═╡ 2050b25a-537c-4057-a930-4d8f713ab9d2
 const BK = BifurcationKit
 
@@ -29,22 +32,22 @@ function takens3(u,p)
 		u[2]
 		p[1]+u[1]*(p[2]-u[2]*p[3]+u[1]*(1.0-u[1]-u[2]))
 	]	
-end  
+end
 
 # ╔═╡ 71656988-ec80-460d-b887-fc2551e34529
-par = (μ1 = 0.2, μ2 = -0.2, δ = 0.5)
+par = (μ1 = 0.2, μ2 = -0.2, δ = 0.2)
 
 # ╔═╡ 3fdb9050-22b9-4d42-8785-1fb96d08f117
 prob = BifurcationProblem(takens3, [-0.1; 0.0], par, (@lens _.μ1),record_from_solution = (x, p) -> x[1])
 
 # ╔═╡ e48feb36-124e-41bf-a65f-871b852ca23a
-opts_br = ContinuationPar(p_max = 0.5, p_min = -0.5,dsmax=0.01,dsmin=1e-4,ds=-1e-4,max_steps = 150,n_inversion = 4);
+opts_br = ContinuationPar(p_max = 0.2, p_min = -1.5,dsmax=0.01,dsmin=1e-4,ds=-1e-4,max_steps = 150,n_inversion = 4);
 
 # ╔═╡ e8c305eb-01c3-4f5f-a227-0c716edba03f
 br = continuation(prob, PALC(), opts_br, bothside = true)
 
 # ╔═╡ fa0eac04-8709-484f-87e1-ae18cea1ccba
-opts_br2 = ContinuationPar(p_max = 0.7, p_min = -0.5,dsmax=0.01,dsmin=1e-4,ds=-1e-4,max_steps = 100,n_inversion = 4, detect_event = 0,detect_bifurcation=3);
+opts_br2 = ContinuationPar(p_max = 0.8, p_min = -0.5,dsmax=0.01,dsmin=1e-4,ds=-1e-4,max_steps = 100,n_inversion = 4, detect_event = 0,detect_bifurcation=3);
 
 # ╔═╡ c1296cb7-9acd-44d4-bff2-9dc411ef0317
 	sn = continuation(br, 3, (@lens _.μ2), opts_br2, normC = norminf, bothside = true, update_minaug_every_step = 2, detect_codim2_bifurcation = 2)
@@ -52,17 +55,17 @@ opts_br2 = ContinuationPar(p_max = 0.7, p_min = -0.5,dsmax=0.01,dsmin=1e-4,ds=-1
 # ╔═╡ 7fea3a59-9b78-4428-bdb6-caac6814e95e
 	hopf = continuation(br, 4, (@lens _.μ2), opts_br2, normC = norminf, bothside = true, update_minaug_every_step = 2, detect_codim2_bifurcation = 2)
 
-# ╔═╡ ddef29bc-506e-4fcc-a265-6f9479734b00
-hopf2 = continuation(br, 5, (@lens _.μ2), opts_br2, normC = norminf, bothside = true, update_minaug_every_step = 2, detect_codim2_bifurcation = 2)
-
 # ╔═╡ edc951ca-f71c-48de-a5d4-2e0b4b7f601f
 btpt = get_normal_form(hopf, 2; nev = 3, autodiff = false)
 
+# ╔═╡ ddef29bc-506e-4fcc-a265-6f9479734b00
+hopf2 = continuation(br, 5, (@lens _.μ2), opts_br2, normC = norminf, bothside = true, update_minaug_every_step = 2, detect_codim2_bifurcation = 2)
+
 # ╔═╡ 4e9b88f6-6415-4820-8715-bdc5e1238bbb
 br_hom_c = continuation(prob,btpt,
-	PeriodicOrbitOCollProblem(100, 3; meshadapt = false, K = 400), PALC(tangent = Bordered()),
-	setproperties(opts_br, max_steps = 250, save_sol_every_step = 1, dsmax = 1e-2, plot_every_step = 1, p_max=0.7,p_min = -0.3, ds = -1e-4, detect_event = 2, detect_bifurcation = 0);
-	verbosity = 0, plot = false,ϵ0 = 1e-6, amplitude = 5e-2, freeparams = ((@lens _.ϵ1), (@lens _.ϵ0)),
+	PeriodicOrbitOCollProblem(100, 5; meshadapt = false, K = 300), PALC(tangent = Bordered()),
+	setproperties(opts_br, max_steps = 200, save_sol_every_step = 1, dsmax = 5e-3, plot_every_step = 1, p_max=0.8,p_min = -0.3, ds = -1e-4, detect_event = 2, detect_bifurcation = 0);
+	verbosity = 0, plot = false,ϵ0 = 1e-6, amplitude = 0.01, freeparams = ((@lens _.ϵ1), (@lens _.ϵ0)),
 	normC = norminf,update_every_step = 4)
 
 # ╔═╡ 24d002b6-f279-4fa3-9713-93d64841a496
@@ -80,19 +83,31 @@ hopfl = stack([[hopf[n].μ1, hopf[n].μ2] for n = 1:length(hopf)])
 # ╔═╡ 36820000-d2d2-4e29-abe7-fa61b56de44b
 hopf2l = stack([[hopf2[n].μ1, hopf2[n].μ2] for n = 1:length(hopf2)])
 
-# ╔═╡ 431ebd72-1df2-48c6-aadc-1e2dfc1f166c
+# ╔═╡ a7f306b1-0c40-4891-b6b7-de6429c06b75
 homl = stack([[br_hom_c[n].μ1, br_hom_c[n].μ2] for n = 1:length(br_hom_c)])
 
+# ╔═╡ 273c45f6-9e08-4c99-9d0f-6115e16ef460
+save("Hom20.jld2","hom20",homl)
+
+# ╔═╡ 89287c1f-9cce-4108-9659-dc6316a183c9
+save("Hopf08.jld2","hopf08",hopf2l)
+
 # ╔═╡ 5258d8ef-fad2-4e6b-a49a-5d2380618422
-save("TB_curves.jld2","sn",snl,"hopf1",hopfl,"hopf2",hopf2l,"hom",homl)
+# ╠═╡ disabled = true
+#=╠═╡
+save("TB_curves.jld2","sn",snl,"hopf1",hopfl)
+  ╠═╡ =#
 
 # ╔═╡ bbac8abd-4724-49b1-b266-ce4f802841ca
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 	plot(snl[2,:],snl[1,:],c=:black,label="SN")
 	plot!(hopfl[2,:],hopfl[1,:],c=:red,label="Hopf 1")
 	plot!(hopf2l[2,:],hopf2l[1,:],c=:red,label="Hopf 2")
 	plot!(homl[2,:],homl[1,:],c=:green,label="Homoclinic",ylims=(-0.5,0.1))
 end	
+  ╠═╡ =#
 
 # ╔═╡ a0e34f60-e242-43af-87ae-17c9575ad1dc
 html"""
@@ -123,11 +138,14 @@ tmax $(@bind tmax Slider(10:10:3000.0,default=10.0;show_value=true))
 begin
 	plot(sn,branchlabel = "Saddle Node")
 	plot!(hopf,branchlabel = "Hopf")
-	plot!(br_hom_c,branchlabel = "Homoclinic",title="Bogdanov Takens δ=0.5")
-	plot!(hopf2,branchlabel = "Hopf 2")
-	scatter!([μ2],[μ1],ylims=(-0.5,0.1))
-	m2 = -0.33:0.01:0.3
-	plot!(m2,@. -(sqrt(1+3*m2)*(2*m2+2/3)+3*m2+2/3)/9)
+	plot!(br_hom_c,branchlabel = "Homoclinic",title="Bogdanov Takens δ=0.3")
+	plot!(hopf2,branchlabel = "Hopf 2",xlims=(-0.5,0.8),ylims=(-0.5,0.15))
+	plot!(-0.5:0.01:0.8,(-0.5:0.01:0.8)*δ .- δ^2 .- δ^3)
+	m1 = -0.33:0.01:0.7
+	m3 = sqrt.(1 .+ 3*m1)
+	sn2b = @. -(m3^2-1/3+2/3*m3^3)/9.0
+	plot!(m1,sn2b)
+	scatter!([μ2],[μ1],ylims=(-0.2,0.1))
 end	
 
 # ╔═╡ 3f155fcb-8ce2-4df0-bea4-4f9eece57c88
@@ -135,6 +153,28 @@ sol = solve(ODEProblem(takens3!, [x0;y0],tmax,[μ1,μ2,δ]));
 
 # ╔═╡ 1cae9718-1101-4e94-8190-655175047b41
 plot(sol,idxs=(1,2),xlims=(-1.5,1.5),ylims=(-0.5,0.5))
+
+# ╔═╡ 2e18f7a7-57a8-43f0-b3b7-1c18988b2eb3
+δ
+
+# ╔═╡ a702b0f9-1552-432b-9f6a-4962a907c747
+δ2 = δ/3+δ^2+δ^3
+
+# ╔═╡ 49ef77bd-2558-41ae-bf5e-fdd6d86a04e2
+m2 = (real(roots([-(27*δ2+1),0,3.0+9*δ,-2.0])).^2 .-1 )./3
+
+# ╔═╡ 65e907e6-db30-49d8-81fc-2e4a5a617ed6
+begin
+	sn1(μ2) =	-(3*μ2+2/3+sqrt(3*μ2+1.0)*(2*μ2+2/3))/9.0
+	sn2(μ2) =	-(3*μ2+2/3-sqrt(3*μ2+1.0)*(2*μ2+2/3))/9.0
+	h2(μ2) = δ*(μ2-δ-δ^2)
+end		
+
+# ╔═╡ 1fb9e99c-62d6-4d84-9c1c-48dbe71f021c
+sn2.(m2)
+
+# ╔═╡ f73d02dd-420f-4b85-94f3-f792d64e4bfb
+h2.(m2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -146,6 +186,7 @@ JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+PolynomialRoots = "3a141323-8675-5d76-9d11-e1df1406c778"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 
 [compat]
@@ -156,6 +197,7 @@ JLD2 = "~0.4.46"
 Parameters = "~0.12.3"
 Plots = "~1.40.3"
 PlutoUI = "~0.7.58"
+PolynomialRoots = "~1.0.0"
 Setfield = "~1.1.1"
 """
 
@@ -165,7 +207,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "34df53d7014c270eab8cfffdab4da7e80d06f996"
+project_hash = "175159c7678c8fdebad846eba2e866c57839939e"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "016833eb52ba2d6bea9fcb50ca295980e728ee24"
@@ -1430,6 +1472,11 @@ git-tree-sha1 = "240d7170f5ffdb285f9427b92333c3463bf65bf6"
 uuid = "1d0040c9-8b98-4ee7-8388-3f51789ca0ad"
 version = "0.2.1"
 
+[[deps.PolynomialRoots]]
+git-tree-sha1 = "5f807b5345093487f733e520a1b7395ee9324825"
+uuid = "3a141323-8675-5d76-9d11-e1df1406c778"
+version = "1.0.0"
+
 [[deps.PositiveFactorizations]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "17275485f373e6673f7e7f97051f703ed5b15b20"
@@ -2269,8 +2316,8 @@ version = "1.4.1+1"
 # ╠═fa0eac04-8709-484f-87e1-ae18cea1ccba
 # ╠═c1296cb7-9acd-44d4-bff2-9dc411ef0317
 # ╠═7fea3a59-9b78-4428-bdb6-caac6814e95e
-# ╠═ddef29bc-506e-4fcc-a265-6f9479734b00
 # ╠═edc951ca-f71c-48de-a5d4-2e0b4b7f601f
+# ╠═ddef29bc-506e-4fcc-a265-6f9479734b00
 # ╠═4e9b88f6-6415-4820-8715-bdc5e1238bbb
 # ╠═d4fd2dd5-c3bd-49d5-887b-497821c04809
 # ╟─eb5ce989-2730-491e-be28-4440f48121e8
@@ -2280,9 +2327,18 @@ version = "1.4.1+1"
 # ╠═926f5298-b239-4734-bca3-2d195942ccea
 # ╠═aa835b9d-bbdf-42cb-9bc4-5a7e48a0e19f
 # ╠═36820000-d2d2-4e29-abe7-fa61b56de44b
-# ╠═431ebd72-1df2-48c6-aadc-1e2dfc1f166c
 # ╠═56e6977a-641d-433a-9d6e-731db0ba48e3
+# ╠═a7f306b1-0c40-4891-b6b7-de6429c06b75
+# ╠═273c45f6-9e08-4c99-9d0f-6115e16ef460
+# ╠═89287c1f-9cce-4108-9659-dc6316a183c9
 # ╠═5258d8ef-fad2-4e6b-a49a-5d2380618422
+# ╠═40f50080-9a21-434a-9d25-f8cd47afdfb7
+# ╠═2e18f7a7-57a8-43f0-b3b7-1c18988b2eb3
+# ╠═a702b0f9-1552-432b-9f6a-4962a907c747
+# ╠═49ef77bd-2558-41ae-bf5e-fdd6d86a04e2
+# ╠═1fb9e99c-62d6-4d84-9c1c-48dbe71f021c
+# ╠═f73d02dd-420f-4b85-94f3-f792d64e4bfb
+# ╠═65e907e6-db30-49d8-81fc-2e4a5a617ed6
 # ╠═bbac8abd-4724-49b1-b266-ce4f802841ca
 # ╟─a0e34f60-e242-43af-87ae-17c9575ad1dc
 # ╟─211a301c-3f40-4f16-9ea6-b518eee21a7e
