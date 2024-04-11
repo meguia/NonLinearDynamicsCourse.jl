@@ -109,6 +109,31 @@ begin
 end	
   ╠═╡ =#
 
+# ╔═╡ 146fa157-7c25-48e5-8469-7ead6bbfe891
+h08 = load("Hom08.jld2")
+
+# ╔═╡ e57cb1a5-2487-45f5-ad7a-dae776de487f
+h02 = load("Hom02.jld2")
+
+# ╔═╡ 2947a58d-45da-45ab-9d61-1993cf2422bf
+dvalues = vcat(collect(1:10),[12,15,20])
+
+# ╔═╡ 10fba449-f486-485f-bdc8-1d5a2dcaf553
+dlist = vcat(lpad.(collect(1:9),2,"0"),["10","12","15","20"])
+
+# ╔═╡ 30c37a31-fade-44d5-9aea-c28190c35b6e
+begin
+	Homall = []
+	for n in 1:length(dlist)
+		temp = load("Hom"*dlist[n]*".jld2")
+		htemp = temp["hom"*dlist[n]]
+		push!(Homall,htemp)
+	end	
+end	
+
+# ╔═╡ 43d37c1f-561b-4539-90ce-8fb99357e656
+save("Homall.jld2","hom",Homall,"dvalues",dvalues)
+
 # ╔═╡ a0e34f60-e242-43af-87ae-17c9575ad1dc
 html"""
 <style>
@@ -2340,7 +2365,13 @@ version = "1.4.1+1"
 # ╠═f73d02dd-420f-4b85-94f3-f792d64e4bfb
 # ╠═65e907e6-db30-49d8-81fc-2e4a5a617ed6
 # ╠═bbac8abd-4724-49b1-b266-ce4f802841ca
-# ╟─a0e34f60-e242-43af-87ae-17c9575ad1dc
+# ╠═146fa157-7c25-48e5-8469-7ead6bbfe891
+# ╠═e57cb1a5-2487-45f5-ad7a-dae776de487f
+# ╠═2947a58d-45da-45ab-9d61-1993cf2422bf
+# ╠═10fba449-f486-485f-bdc8-1d5a2dcaf553
+# ╠═30c37a31-fade-44d5-9aea-c28190c35b6e
+# ╠═43d37c1f-561b-4539-90ce-8fb99357e656
+# ╠═a0e34f60-e242-43af-87ae-17c9575ad1dc
 # ╟─211a301c-3f40-4f16-9ea6-b518eee21a7e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
