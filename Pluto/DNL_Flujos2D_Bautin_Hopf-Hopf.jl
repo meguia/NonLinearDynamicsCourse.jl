@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.40
+# v0.19.39
 
 using Markdown
 using InteractiveUtils
@@ -218,7 +218,7 @@ input[type*="range"] {
 sp = html"&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp";
 
 # ╔═╡ f3ac4ce9-d182-4b75-875e-274ee2a7f470
-begin 
+begin
 	md"""
 	x0 $(@bind x0 Slider(-1.0:0.01:2.0,default=0.1;show_value=true)) $sp 
 	y0 $(@bind y0 Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
@@ -288,7 +288,7 @@ tmax : $(@bind tmax_reed Slider(10:10:300,default=0.1;show_value=true))
 # ╟─c2177a4c-cff4-4c7a-86f4-629b60e13a63
 # ╠═0d7be9cf-763d-4781-b747-ee4f99fabeee
 # ╠═cc1e8cbc-1088-4ae0-bad0-8dcc83b98f22
-# ╠═f3ac4ce9-d182-4b75-875e-274ee2a7f470
+# ╟─f3ac4ce9-d182-4b75-875e-274ee2a7f470
 # ╠═5621e2f8-69b1-4bcc-a347-704d6e1bc235
 # ╠═c8148366-9fab-4ef4-8ac8-0bb6421ce68e
 # ╟─ef53daf7-7d49-4763-8f3c-01aec8a105f1
