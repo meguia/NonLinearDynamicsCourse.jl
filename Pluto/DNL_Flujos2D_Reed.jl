@@ -5,13 +5,7 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 9e372d70-f6af-11ee-10b3-2150e19c755b
-using DifferentialEquations, Plots, Parameters, Setfield, BifurcationKit, PlutoUI
-
-# ╔═╡ 26bb9882-6c98-478c-9742-fae83deed682
-using BSplineKit
-
-# ╔═╡ 7d4c3421-c423-4194-bae2-347daafbd98e
-using JLD2
+using DifferentialEquations, Plots, Parameters, Setfield, BifurcationKit, BSplineKit, JLD2
 
 # ╔═╡ f667d681-a2c4-4b04-a641-32692df1c5c2
 function vreed(u,p)
@@ -23,7 +17,7 @@ function vreed(u,p)
 end    
 
 # ╔═╡ 71656988-ec80-460d-b887-fc2551e34529
-par = (μ = -0.1, k = 1.0, v0 = -0.7)
+par = (μ = -0.1, k = 0.25, v0 = 0.5)
 
 # ╔═╡ 3428e9ea-3c82-44b0-8f94-61ffe6b55e94
 args_po = (	record_from_solution = (x, p) -> begin
@@ -34,10 +28,10 @@ args_po = (	record_from_solution = (x, p) -> begin
 	end)
 
 # ╔═╡ e48feb36-124e-41bf-a65f-871b852ca23a
-opts_br = ContinuationPar(p_max = 2.0, p_min = -0.1,dsmax=0.01,dsmin=1e-4,ds=1e-4,max_steps = 200,n_inversion = 8);
+opts_br = ContinuationPar(p_max = 1.5, p_min = -0.1,tol_stability=1e-8,dsmax=0.01,dsmin=1e-4,ds=1e-4,max_steps = 200,n_inversion = 8);
 
 # ╔═╡ 3fdb9050-22b9-4d42-8785-1fb96d08f117
-prob = BifurcationProblem(vreed, [0.1; 0.0], par, (@lens _.μ))
+prob = BifurcationProblem(vreed, [-0.1; 0.0], par, (@lens _.μ))
 
 # ╔═╡ e8c305eb-01c3-4f5f-a227-0c716edba03f
 br = continuation(prob, PALC(), opts_br, bothside = true)
@@ -47,35 +41,42 @@ br_po = continuation(br, 2, opts_br, PeriodicOrbitOCollProblem(40, 6) ; args_po)
 
 # ╔═╡ d0801afa-74fd-4366-b035-998ca11864a6
 begin
-	param = -0.1:0.01:2.0
+	param = -0.1:0.01:1.5
 	npar = length(param)
-	v0 = 0:0.01:0.75
-	ampl = zeros((npar,length(v0)))
-	freq = zeros((npar,length(v0)))
-	for n = 1:length(v0)
-		print(v0[n])
-		prob_temp = BifurcationProblem(vreed, [0.1; 0.0], set(par,(@lens _.v0),v0[n]), (@lens _.μ))
-		br_temp = continuation(prob_temp, PALC(), opts_br, bothside = true)
-		br_po_temp = continuation(br_temp, 2, opts_br, PeriodicOrbitOCollProblem(40, 6) ; args_po)
-		param_temp = [br_po_temp[n].param for n = 1:length(br_po_temp)]
-		ampl_temp = [br_po_temp[n].amplitude for n = 1:length(br_po_temp)]
-		freq_temp = [2*pi/br_po_temp[n].period for n = 1:length(br_po_temp)]
-		nini = findfirst(x -> x>param_temp[1],param)-1
-		itp_ampl = interpolate(param_temp, ampl_temp, BSplineOrder(4))
-		ampl[nini:end,n] = itp_ampl.(param[nini:end])
-		itp_freq = interpolate(param_temp, freq_temp, BSplineOrder(4))
-		freq[nini:end,n] = itp_freq.(param[nini:end])
-	end
+	v0 = 0:0.01:0.5
+	knotes = 2.0 .^(-2:1/6:2)
+	ampl = zeros((length(knotes),length(v0),npar))
+	freq = zeros((length(knotes),length(v0),npar))
+	for m = 1:length(knotes)
+		freq[m,:,:] .= sqrt(knotes[m])
+		for n = 1:length(v0)
+			prob_temp = BifurcationProblem(vreed,[0.1; 0.0],setproperties(par,(k=knotes[m],v0=v0[n])),(@lens _.μ))
+			br_temp = continuation(prob_temp, PALC(), opts_br, bothside = true)
+			br_po_temp = continuation(br_temp, 2, opts_br, PeriodicOrbitOCollProblem(40, 6) ; args_po)
+			param_temp = [br_po_temp[n].param for n = 1:length(br_po_temp)]
+			ampl_temp = [br_po_temp[n].amplitude for n = 1:length(br_po_temp)]
+			freq_temp = [2*pi/br_po_temp[n].period for n = 1:length(br_po_temp)]
+			nini = findfirst(x -> x>param_temp[1],param)
+			itp_ampl = interpolate(param_temp, ampl_temp, BSplineOrder(4))
+			ampl[m,n,nini:end] = itp_ampl.(param[nini:end])
+			itp_freq = interpolate(param_temp, freq_temp, BSplineOrder(4))
+			freq[m,n,nini:end] = itp_freq.(param[nini:end])
+		end
+	end	
 end	
 
 # ╔═╡ a0b3eac9-7fbd-43b2-9c91-d1ed574b7bc8
-contourf(v0,param,freq,levels=2 .^(-1:1/12:0))
-
-# ╔═╡ 30bb8ed9-90bc-45f6-86e7-9f40a721f53f
-contourf(v0,param,ampl,levels=0:0.1:4.3,lw=0)
+begin
+	myf = 5
+	contourf(v0,param,freq[myf,:,:]',levels=freq[myf,1,1]*2 .^(-12/12:1/12:0),lw=0)
+	plot!(v0,3*v0.^2,c=:black,lw=2)
+end	
 
 # ╔═╡ 5e1e805d-f329-4671-b392-514238f09af1
-save("freed.jld2","mu",param,"v0",v0,"ampl",ampl,"freq",freq)
+save("freed.jld2","mu",param,"v0",v0,"knotes",knotes,"ampl",ampl,"freq",freq)
+
+# ╔═╡ 72843cfa-f550-49f1-85b5-31fcc0addac9
+sqrt.([1/4,1/3,0.5,1,2,3,4])
 
 # ╔═╡ a0e34f60-e242-43af-87ae-17c9575ad1dc
 html"""
@@ -98,7 +99,6 @@ DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 
 [compat]
@@ -108,7 +108,6 @@ DifferentialEquations = "~7.13.0"
 JLD2 = "~0.4.46"
 Parameters = "~0.12.3"
 Plots = "~1.40.4"
-PlutoUI = "~0.7.58"
 Setfield = "~1.1.1"
 """
 
@@ -118,18 +117,12 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "045da9f183f5789952942fd59eb597ecb4cec566"
+project_hash = "e169dbcb99c5e1b09fc7eb5f271538f8f40d344c"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "016833eb52ba2d6bea9fcb50ca295980e728ee24"
 uuid = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 version = "0.2.7"
-
-[[deps.AbstractPlutoDingetjes]]
-deps = ["Pkg"]
-git-tree-sha1 = "0f748c81756f2e5e6854298f11ad8b2dfae6911a"
-uuid = "6e696c72-6542-2067-7265-42206c756150"
-version = "1.3.0"
 
 [[deps.Accessors]]
 deps = ["CompositionsBase", "ConstructionBase", "Dates", "InverseFunctions", "LinearAlgebra", "MacroTools", "Markdown", "Test"]
@@ -838,24 +831,6 @@ git-tree-sha1 = "f218fe3736ddf977e0e772bc9a586b2383da2685"
 uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
 version = "0.3.23"
 
-[[deps.Hyperscript]]
-deps = ["Test"]
-git-tree-sha1 = "179267cfa5e712760cd43dcae385d7ea90cc25a4"
-uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
-version = "0.0.5"
-
-[[deps.HypertextLiteral]]
-deps = ["Tricks"]
-git-tree-sha1 = "7134810b1afce04bbc1045ca1985fbe81ce17653"
-uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
-version = "0.9.5"
-
-[[deps.IOCapture]]
-deps = ["Logging", "Random"]
-git-tree-sha1 = "8b72179abc660bfab5e28472e019392b97d0985c"
-uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
-version = "0.2.4"
-
 [[deps.IfElse]]
 git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
 uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
@@ -1197,11 +1172,6 @@ weakdeps = ["ChainRulesCore", "ForwardDiff", "SpecialFunctions"]
     ForwardDiffExt = ["ChainRulesCore", "ForwardDiff"]
     SpecialFunctionsExt = "SpecialFunctions"
 
-[[deps.MIMEs]]
-git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
-uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
-version = "0.1.4"
-
 [[deps.MKL_jll]]
 deps = ["Artifacts", "IntelOpenMP_jll", "JLLWrappers", "LazyArtifacts", "Libdl"]
 git-tree-sha1 = "72dc3cf284559eb8f53aa593fe62cb33f83ed0c0"
@@ -1471,12 +1441,6 @@ version = "1.40.4"
     IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
     ImageInTerminal = "d8c32880-2388-543b-8c61-d9f865259254"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
-
-[[deps.PlutoUI]]
-deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
-git-tree-sha1 = "71a22244e352aa8c5f0f2adde4150f62368a3f2e"
-uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-version = "0.7.58"
 
 [[deps.PoissonRandom]]
 deps = ["Random"]
@@ -2355,12 +2319,10 @@ version = "1.4.1+1"
 # ╠═3fdb9050-22b9-4d42-8785-1fb96d08f117
 # ╠═e8c305eb-01c3-4f5f-a227-0c716edba03f
 # ╠═ed2783c8-20dd-4ef9-9035-8c796b0ba61c
-# ╠═26bb9882-6c98-478c-9742-fae83deed682
 # ╠═d0801afa-74fd-4366-b035-998ca11864a6
 # ╠═a0b3eac9-7fbd-43b2-9c91-d1ed574b7bc8
-# ╠═30bb8ed9-90bc-45f6-86e7-9f40a721f53f
-# ╠═7d4c3421-c423-4194-bae2-347daafbd98e
 # ╠═5e1e805d-f329-4671-b392-514238f09af1
+# ╠═72843cfa-f550-49f1-85b5-31fcc0addac9
 # ╟─a0e34f60-e242-43af-87ae-17c9575ad1dc
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
