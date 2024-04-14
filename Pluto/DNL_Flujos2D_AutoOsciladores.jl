@@ -290,7 +290,7 @@ md"""
 x0 $(@bind x0_vreed Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
 y0 $(@bind y0_vreed Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
 μ : $(@bind μ_vreed Slider(-0.1:0.01:10.0,default=-0.1;show_value=true)) \
-v0 : $(@bind v0_vreed Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) \
+v0 : $(@bind v0_vreed Slider(-1.5:0.01:1.5,default=-0.1;show_value=true)) \
 k : $(@bind k_vreed Slider(0.1:0.01:3.0,default=-0.1;show_value=true)) \
 tmax : $(@bind tmax_vreed Slider(10:10:300.0,default=10.0;show_value=true)) 
 """
@@ -392,6 +392,9 @@ begin
     plot(p1b,p2b,layout=(1,2),size = (900,450),title="Cuerda Frotada")
 end	
 
+# ╔═╡ 80ca0eec-1adb-44d7-92e4-36d755b3fd6d
+
+
 # ╔═╡ 7fb98f93-be03-43d3-895c-c72f58f09d27
 md"""
 # Oscilador de Duffing van der Pol
@@ -475,7 +478,7 @@ input[type*="range"] {
 # ╠═835a9bda-3708-41af-bdab-1b8e72aac4aa
 # ╠═df7cab14-abe1-4f93-aec8-5422fea44fde
 # ╠═163d352d-ce42-4828-a418-520033c23719
-# ╟─e8947aad-3033-45e1-b9be-c85950b82fef
+# ╠═e8947aad-3033-45e1-b9be-c85950b82fef
 # ╠═ea88f136-6d7d-4b0a-b4d9-2f4e898930af
 # ╠═b9cdbe39-da33-47db-8a54-3e482e0e924b
 # ╠═7cec5f3e-3384-47a5-9fd2-62385d9feef8
@@ -486,6 +489,7 @@ input[type*="range"] {
 # ╟─66497e63-8efd-472b-aa35-50c826917eb2
 # ╠═35f0087d-28fc-42b8-baeb-c18df8a149fd
 # ╠═fdb0d8bc-d780-4b81-9e54-19510d70ed76
+# ╠═80ca0eec-1adb-44d7-92e4-36d755b3fd6d
 # ╟─7fb98f93-be03-43d3-895c-c72f58f09d27
 # ╠═216ef632-f17a-4f28-9aad-04364803bcb7
 # ╟─b81e8195-10ac-467f-b99f-c881a4f3d681

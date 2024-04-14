@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.39
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -15,13 +15,7 @@ macro bind(def, element)
 end
 
 # ╔═╡ 9e372d70-f6af-11ee-10b3-2150e19c755b
-using DifferentialEquations, Plots, Parameters, Setfield, BifurcationKit, HclinicBifurcationKit, PlutoUI
-
-# ╔═╡ 56e6977a-641d-433a-9d6e-731db0ba48e3
-using JLD2
-
-# ╔═╡ 40f50080-9a21-434a-9d25-f8cd47afdfb7
-using PolynomialRoots
+using DifferentialEquations, Plots, Parameters, Setfield, BifurcationKit, HclinicBifurcationKit, PlutoUI,  PolynomialRoots, JLD2
 
 # ╔═╡ 2050b25a-537c-4057-a930-4d8f713ab9d2
 const BK = BifurcationKit
@@ -74,28 +68,13 @@ function takens3!(du,u,p,t)
 	du[2]=p[1]+u[1]*(p[2]-u[2]*p[3]+u[1]*(1.0-u[1]-u[2]))
 end 
 
-# ╔═╡ 926f5298-b239-4734-bca3-2d195942ccea
-snl = stack([[sn[n].μ1, sn[n].μ2] for n = 1:length(sn)])
-
-# ╔═╡ aa835b9d-bbdf-42cb-9bc4-5a7e48a0e19f
-hopfl = stack([[hopf[n].μ1, hopf[n].μ2] for n = 1:length(hopf)])
-
-# ╔═╡ 36820000-d2d2-4e29-abe7-fa61b56de44b
-hopf2l = stack([[hopf2[n].μ1, hopf2[n].μ2] for n = 1:length(hopf2)])
-
 # ╔═╡ a7f306b1-0c40-4891-b6b7-de6429c06b75
 homl = stack([[br_hom_c[n].μ1, br_hom_c[n].μ2] for n = 1:length(br_hom_c)])
 
 # ╔═╡ 273c45f6-9e08-4c99-9d0f-6115e16ef460
-save("Hom20.jld2","hom20",homl)
-
-# ╔═╡ 89287c1f-9cce-4108-9659-dc6316a183c9
-save("Hopf08.jld2","hopf08",hopf2l)
-
-# ╔═╡ 5258d8ef-fad2-4e6b-a49a-5d2380618422
 # ╠═╡ disabled = true
 #=╠═╡
-save("TB_curves.jld2","sn",snl,"hopf1",hopfl)
+save("Hom20.jld2","hom20",homl)
   ╠═╡ =#
 
 # ╔═╡ bbac8abd-4724-49b1-b266-ce4f802841ca
@@ -109,30 +88,25 @@ begin
 end	
   ╠═╡ =#
 
-# ╔═╡ 146fa157-7c25-48e5-8469-7ead6bbfe891
-h08 = load("Hom08.jld2")
-
-# ╔═╡ e57cb1a5-2487-45f5-ad7a-dae776de487f
-h02 = load("Hom02.jld2")
-
-# ╔═╡ 2947a58d-45da-45ab-9d61-1993cf2422bf
-dvalues = vcat(collect(1:10),[12,15,20])
-
-# ╔═╡ 10fba449-f486-485f-bdc8-1d5a2dcaf553
-dlist = vcat(lpad.(collect(1:9),2,"0"),["10","12","15","20"])
-
 # ╔═╡ 30c37a31-fade-44d5-9aea-c28190c35b6e
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 	Homall = []
+	dlist = vcat(lpad.(collect(1:9),2,"0"),["10","12","15","20"])
 	for n in 1:length(dlist)
 		temp = load("Hom"*dlist[n]*".jld2")
 		htemp = temp["hom"*dlist[n]]
 		push!(Homall,htemp)
 	end	
 end	
+  ╠═╡ =#
 
 # ╔═╡ 43d37c1f-561b-4539-90ce-8fb99357e656
+# ╠═╡ disabled = true
+#=╠═╡
 save("Homall.jld2","hom",Homall,"dvalues",dvalues)
+  ╠═╡ =#
 
 # ╔═╡ a0e34f60-e242-43af-87ae-17c9575ad1dc
 html"""
@@ -179,27 +153,17 @@ sol = solve(ODEProblem(takens3!, [x0;y0],tmax,[μ1,μ2,δ]));
 # ╔═╡ 1cae9718-1101-4e94-8190-655175047b41
 plot(sol,idxs=(1,2),xlims=(-1.5,1.5),ylims=(-0.5,0.5))
 
-# ╔═╡ 2e18f7a7-57a8-43f0-b3b7-1c18988b2eb3
-δ
-
-# ╔═╡ a702b0f9-1552-432b-9f6a-4962a907c747
-δ2 = δ/3+δ^2+δ^3
-
-# ╔═╡ 49ef77bd-2558-41ae-bf5e-fdd6d86a04e2
-m2 = (real(roots([-(27*δ2+1),0,3.0+9*δ,-2.0])).^2 .-1 )./3
-
 # ╔═╡ 65e907e6-db30-49d8-81fc-2e4a5a617ed6
 begin
 	sn1(μ2) =	-(3*μ2+2/3+sqrt(3*μ2+1.0)*(2*μ2+2/3))/9.0
 	sn2(μ2) =	-(3*μ2+2/3-sqrt(3*μ2+1.0)*(2*μ2+2/3))/9.0
 	h2(μ2) = δ*(μ2-δ-δ^2)
+	function bt(δ) 
+		δ2 = 9*(δ+3*δ^2+3*δ^3)
+		m2 = (real(roots([-(δ2+1),0,3.0+9*δ,-2.0])).^2 .-1 )./3
+		m2[1]
+	end	
 end		
-
-# ╔═╡ 1fb9e99c-62d6-4d84-9c1c-48dbe71f021c
-sn2.(m2)
-
-# ╔═╡ f73d02dd-420f-4b85-94f3-f792d64e4bfb
-h2.(m2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2349,29 +2313,13 @@ version = "1.4.1+1"
 # ╠═1cae9718-1101-4e94-8190-655175047b41
 # ╠═3f155fcb-8ce2-4df0-bea4-4f9eece57c88
 # ╠═24d002b6-f279-4fa3-9713-93d64841a496
-# ╠═926f5298-b239-4734-bca3-2d195942ccea
-# ╠═aa835b9d-bbdf-42cb-9bc4-5a7e48a0e19f
-# ╠═36820000-d2d2-4e29-abe7-fa61b56de44b
-# ╠═56e6977a-641d-433a-9d6e-731db0ba48e3
 # ╠═a7f306b1-0c40-4891-b6b7-de6429c06b75
 # ╠═273c45f6-9e08-4c99-9d0f-6115e16ef460
-# ╠═89287c1f-9cce-4108-9659-dc6316a183c9
-# ╠═5258d8ef-fad2-4e6b-a49a-5d2380618422
-# ╠═40f50080-9a21-434a-9d25-f8cd47afdfb7
-# ╠═2e18f7a7-57a8-43f0-b3b7-1c18988b2eb3
-# ╠═a702b0f9-1552-432b-9f6a-4962a907c747
-# ╠═49ef77bd-2558-41ae-bf5e-fdd6d86a04e2
-# ╠═1fb9e99c-62d6-4d84-9c1c-48dbe71f021c
-# ╠═f73d02dd-420f-4b85-94f3-f792d64e4bfb
 # ╠═65e907e6-db30-49d8-81fc-2e4a5a617ed6
 # ╠═bbac8abd-4724-49b1-b266-ce4f802841ca
-# ╠═146fa157-7c25-48e5-8469-7ead6bbfe891
-# ╠═e57cb1a5-2487-45f5-ad7a-dae776de487f
-# ╠═2947a58d-45da-45ab-9d61-1993cf2422bf
-# ╠═10fba449-f486-485f-bdc8-1d5a2dcaf553
 # ╠═30c37a31-fade-44d5-9aea-c28190c35b6e
 # ╠═43d37c1f-561b-4539-90ce-8fb99357e656
-# ╠═a0e34f60-e242-43af-87ae-17c9575ad1dc
+# ╟─a0e34f60-e242-43af-87ae-17c9575ad1dc
 # ╟─211a301c-3f40-4f16-9ea6-b518eee21a7e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
