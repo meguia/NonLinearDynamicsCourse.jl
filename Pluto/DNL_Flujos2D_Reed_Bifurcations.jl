@@ -4,151 +4,46 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 72fa8994-47dc-4e0c-80fd-021f5fc629e9
-using DifferentialEquations, Plots
+# ╔═╡ 9e372d70-f6af-11ee-10b3-2150e19c755b
+using DifferentialEquations, Plots, Parameters, Setfield, BifurcationKit, BSplineKit, JLD2
 
-# ╔═╡ 163d352d-ce42-4828-a418-520033c23719
-# Escribimos la ecuacion de la lengueta
-function vreed!(du,u,p,t)
-    (μ,k,v0) = p
-	v = u[2] - v0
-    du[1] = u[2]
-    du[2] = v*(μ-v*v)-k*u[1]
-    du
-end    
+# ╔═╡ 71656988-ec80-460d-b887-fc2551e34529
+par = (μ = -0.1, k = 0.25, v0 = 0.5)
 
-# ╔═╡ fca48a5c-d1f0-4069-85c9-71c6b612b25f
-# Para la Figura 1
+# ╔═╡ 3428e9ea-3c82-44b0-8f94-61ffe6b55e94
+args_po = (	record_from_solution = (x, p) -> begin
+		xtt = get_periodic_orbit(p.prob, x, p.p)
+		return (max = maximum(xtt[1,:]),
+				min = minimum(xtt[1,:]),
+				period = getperiod(p.prob, x, p.p))
+	end)
+
+# ╔═╡ e48feb36-124e-41bf-a65f-871b852ca23a
+opts_br = ContinuationPar(p_max = 1.5, p_min = -0.1,tol_stability=1e-8,dsmax=0.01,dsmin=1e-4,ds=1e-4,max_steps = 200,n_inversion = 8);
+
+# ╔═╡ 3fdb9050-22b9-4d42-8785-1fb96d08f117
+prob = BifurcationProblem(vreed, [-0.1; 0.0], par, (@lens _.μ))
+
+# ╔═╡ e8c305eb-01c3-4f5f-a227-0c716edba03f
+br = continuation(prob, PALC(), opts_br, bothside = true)
+
+# ╔═╡ ed2783c8-20dd-4ef9-9035-8c796b0ba61c
+br_po = continuation(br, 2, opts_br, PeriodicOrbitOCollProblem(40, 6) ; args_po)
+
+# ╔═╡ a0b3eac9-7fbd-43b2-9c91-d1ed574b7bc8
 begin
-	k = 2.0
-	μ = 0.4
-	sol1a = solve(ODEProblem(vreed!,[0.0;1.0],(0.0,5.0),[-0.4,k,0.0]));
-	sol1b = solve(ODEProblem(vreed!,[0.0;1.0],(0.0,20.0),[-0.4,k,0.0]));
-	sol2a = solve(ODEProblem(vreed!,[0.02;0.0],(0.0,20.0),[μ,k,0.0]));
-	sol2b = solve(ODEProblem(vreed!,[0.02;0.0],(0.0,14.0),[μ,k,0.0]));
-	sol2c = solve(ODEProblem(vreed!,[0.0;1.0],(0.0,5.8),[μ,k,0.0]));
-	sol2d = solve(ODEProblem(vreed!,[0.0;0.727],(0.0,8.5),[μ,k,0.0]));
-end;
-
-# ╔═╡ e58881c1-3f0c-4b82-b787-37325442226e
-begin
-	xlims = (-1,1)
-	ylims = (-1,1)
-	plt1 = scatter([0],[0],color=:black,xlims=xlims,ylims=ylims,legend=false)
-	plot!(plt1,sol1a,idxs=(1,2),c=:black,arrow=true,lw=1)
-	plot!(plt1,sol1b,idxs=(1,2),c=:black,arrow=false,lw=1)
-	plot!(plt1,xlabel="",ylabel="",border=:none)
-	plt2 = scatter([0],[0],color=:white,xlims=xlims,ylims=ylims,legend=false)
-	plot!(plt2,sol2a,idxs=(1,2),c=:black,arrow=true,lw=1)
-	plot!(plt2,sol2b,idxs=(1,2),c=:black,arrow=true,lw=1)
-	plot!(plt2,sol2c,idxs=(1,2),c=:black,arrow=true,lw=1)
-	plot!(plt2,sol2d,idxs=(1,2),c=:black,arrow=true,lw=3)
-	plot!(plt2,xlabel="",ylabel="",border=:none)
-	plt = plot(plt1,plt2,layout = (1, 2),size=(900,300))
-	#savefig(plt, "fig1.eps")
+	myf = 5
+	contourf(v0,param,freq[myf,:,:]',levels=freq[myf,1,1]*2 .^(-12/12:1/12:0),lw=0)
+	plot!(v0,3*v0.^2,c=:black,lw=2)
 end	
 
-# ╔═╡ 5b882fed-1fed-4a61-99a5-0ee032ffbf9c
-function snlc!(du,u,p,t)
-	du[1] = p[1]*u[1]*(1.0-u[1]^2)
-	du[2] = -p[2] + cos(u[2])
-end
+# ╔═╡ 5e1e805d-f329-4671-b392-514238f09af1
+save("freed.jld2","mu",param,"v0",v0,"knotes",knotes,"ampl",ampl,"freq",freq)
 
-# ╔═╡ 6498cd44-5afd-4247-9f9c-5485987f16a3
-function polar2xy(ρ,θ)
-	x = ρ*cos(θ)
-	y = ρ*sin(θ)
-	return (x,y)
-end
+# ╔═╡ 72843cfa-f550-49f1-85b5-31fcc0addac9
+sqrt.([1/4,1/3,0.5,1,2,3,4])
 
-# ╔═╡ d29c6a53-a627-42c5-8fe7-b6c6a6aaae87
-# Para la Figura 1 b
-begin
-	ϵ = 0.95
-	ζ = 2.0
-	ϵ2 = 1.01
-	sol3a = solve(ODEProblem(snlc!,[0.02;-π/9.9],(0,40.0),[ζ,ϵ]),saveat=0.05);
-	sol3b = solve(ODEProblem(snlc!,[1.5;-π/9.9],(0,0.7),[ζ,ϵ]),saveat=0.05);
-	sol3d = solve(ODEProblem(snlc!,[0.02;-π/9.9],(0,2.8),[ζ,ϵ]),saveat=0.05);
-	sol3c = solve(ODEProblem(snlc!,[0.02;-π/9.89],(0,40.0),[ζ,ϵ]),saveat=0.05);
-	sol3e = solve(ODEProblem(snlc!,[0.02;-π/9.89],(0,26.0),[ζ,ϵ]),saveat=0.05);
-	sol4a = solve(ODEProblem(snlc!,[0.02;-π/14],(0,52.0),[ζ,ϵ2]),saveat=0.05);
-	sol4b = solve(ODEProblem(snlc!,[1.5;-π/9.9],(0,2.7),[ζ,ϵ2]),saveat=0.05);
-	sol4c = solve(ODEProblem(snlc!,[1.0;0.5],(0,50.0),[ζ,ϵ2]),saveat=0.05);
-end;
-
-# ╔═╡ a354d761-9cc4-4e61-b483-2ae20df06ecf
-begin
-	nodo = polar2xy(1,acos(ϵ))
-	plt3=scatter([0],[0],color=:white,xlims=(-1.5,1.5),ylims=(-1.1,1.1),legend=false)
-	scatter!(plt3,[nodo[1]],[nodo[2]],color=:black)
-	plot!(plt3,sol3a,idxs=(polar2xy,1,2),c=:black,arrow=true,lw=1)
-	plot!(plt3,sol3b,idxs=(polar2xy,1,2),c=:black,arrow=true,lw=1)
-	plot!(plt3,sol3c,idxs=(polar2xy,1,2),c=:black,arrow=true,lw=1)
-	plot!(plt3,sol3d,idxs=(polar2xy,1,2),c=:black,arrow=true,lw=1)
-	plot!(plt3,sol3e,idxs=(polar2xy,1,2),c=:black,arrow=true,lw=1)
-	annotate!(plt3,nodo[1]+0.15,nodo[2], text("N", :black, 20))
-	annotate!(plt3,nodo[1]+0.1,-nodo[2]+0.1, text("S", :black, 20))
-	plot!(plt3,border=:none)
-	plt4=scatter([0],[0],color=:white,xlims=(-1.5,1.5),ylims=(-1.1,1.1),legend=false)
-	plot!(plt4,sol4a,idxs=(polar2xy,1,2),c=:black,arrow=true,lw=1)
-	plot!(plt4,sol4b,idxs=(polar2xy,1,2),c=:black,arrow=true,lw=1)
-	plot!(plt4,sol4c,idxs=(polar2xy,1,2),c=:black,arrow=true,lw=3)
-	#plot!(plt4,sol4d,idxs=(polar2xy,1,2),c=:black,arrow=true,ls=:dash,lw=1)
-	plot!(plt4,border=:none)
-	plt_new = plot(plt3,plt4,layout = (1, 2),size=(900,300))
-end
-
-# ╔═╡ be7e08d5-39f4-415a-9968-5758a3ae7534
-function homocl!(du,u,p,t)
-	du[1]=u[2]
-	du[2]=p[1]*u[2]+u[1]*(1.0-u[1]+u[2])
-end
-
-# ╔═╡ b02777cb-e41a-43f4-ada1-248ffafbdec5
-begin
-	ξ1 = -0.86
-	ξ2 = -0.89
-	sol5a = solve(ODEProblem(homocl!,[0.02;0.01],(0,15.0),[ξ1]),saveat=0.05);
-	sol5b = solve(ODEProblem(homocl!,[1.02;-0.03],(0,58.0),[ξ1]),saveat=0.05);
-	sol5c = solve(ODEProblem(homocl!,[0.02;0.01],(0,4.0),[ξ1]),saveat=0.05);
-	sol6a = solve(ODEProblem(homocl!,[0.02;0.02],(0,5.0),[ξ2]),saveat=0.05);
-	sol6b = solve(ODEProblem(homocl!,[1.02;-0.03],(0,60.0),[ξ2]),saveat=0.05);
-	sol_temp = solve(ODEProblem(homocl!,[0.02;0.01],(0,200.0),[ξ2]),saveat=0.05);
-	sol6c = solve(ODEProblem(homocl!,sol_temp.u[end],(0,20.0),[ξ2]),saveat=0.05);
-end;
-
-# ╔═╡ 94fe855c-24b9-4c8f-8f06-b0259cfe84f3
-sol5a.u[end]
-
-# ╔═╡ 82216a23-e1f2-4010-b78e-ff5f3e0c2a5c
-begin
-	plt5=scatter([1],[0],color=:white,xlims=(-0.3,1.7),ylims=(-0.8,0.8),legend=false)
-	scatter!(plt5,[0],[0],color=:white)
-	plot!(plt5,sol5a,idxs=(1,2),c=:black,arrow=true,lw=1)
-	plot!(plt5,sol5b,idxs=(1,2),c=:black,arrow=true,lw=1)
-	plot!(plt5,sol5c,idxs=(1,2),c=:black,arrow=true,lw=1)
-	annotate!(plt5,0,0.11, text("S", :black, 20))
-	plot!(plt5,border=:none)
-	plt6=scatter([1],[0],color=:white,xlims=(-0.3,1.7),ylims=(-0.8,0.8),legend=false)
-	scatter!(plt6,[0],[0],color=:white)
-	plot!(plt6,sol6a,idxs=(1,2),c=:black,arrow=true,lw=1)
-	plot!(plt6,sol6b,idxs=(1,2),c=:black,arrow=true,lw=1)
-	plot!(plt6,sol6c,idxs=(1,2),c=:black,arrow=true,lw=3)
-	annotate!(plt6,0,0.11, text("S", :black, 20))
-	plot!(plt6,border=:none)
-	plt_new2 = plot(plt5,plt6,layout = (1, 2),size=(900,300))
-end	
-
-# ╔═╡ ceef1065-3696-4c5e-ba28-f68a5e76612f
-begin
-	plt_all = plot(plt1,plt2,plt3,plt4,plt5,plt6,layout=(3,2),size=(1200,1200))
-	savefig(plt_all, "fig1.png")
-	plt_all
-end
-	
-
-# ╔═╡ 4f04d9a1-3e58-4ead-b5c4-daf4d88e9f29
+# ╔═╡ a0e34f60-e242-43af-87ae-17c9575ad1dc
 html"""
 <style>
 main {
@@ -160,24 +55,69 @@ input[type*="range"] {
 </style>
 """
 
+# ╔═╡ f667d681-a2c4-4b04-a641-32692df1c5c2
+function vreed(u,p)
+    @unpack μ,k,v0 = p
+	[
+		u[2]
+		(u[2] - v0)*(μ-(u[2] - v0)^2)-k*u[1]
+	]
+end    
+
+# ╔═╡ d0801afa-74fd-4366-b035-998ca11864a6
+begin
+	param = -0.1:0.01:1.5
+	npar = length(param)
+	v0 = 0:0.01:0.5
+	knotes = 2.0 .^(-2:1/6:2)
+	ampl = zeros((length(knotes),length(v0),npar))
+	freq = zeros((length(knotes),length(v0),npar))
+	for m = 1:length(knotes)
+		freq[m,:,:] .= sqrt(knotes[m])
+		for n = 1:length(v0)
+			prob_temp = BifurcationProblem(vreed,[0.1; 0.0],setproperties(par,(k=knotes[m],v0=v0[n])),(@lens _.μ))
+			br_temp = continuation(prob_temp, PALC(), opts_br, bothside = true)
+			br_po_temp = continuation(br_temp, 2, opts_br, PeriodicOrbitOCollProblem(40, 6) ; args_po)
+			param_temp = [br_po_temp[n].param for n = 1:length(br_po_temp)]
+			ampl_temp = [br_po_temp[n].amplitude for n = 1:length(br_po_temp)]
+			freq_temp = [2*pi/br_po_temp[n].period for n = 1:length(br_po_temp)]
+			nini = findfirst(x -> x>param_temp[1],param)
+			itp_ampl = interpolate(param_temp, ampl_temp, BSplineOrder(4))
+			ampl[m,n,nini:end] = itp_ampl.(param[nini:end])
+			itp_freq = interpolate(param_temp, freq_temp, BSplineOrder(4))
+			freq[m,n,nini:end] = itp_freq.(param[nini:end])
+		end
+	end	
+end	
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+BSplineKit = "093aae92-e908-43d7-9660-e50ee39d5a0a"
+BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 
 [compat]
+BSplineKit = "~0.17.1"
+BifurcationKit = "~0.3.3"
 DifferentialEquations = "~7.13.0"
+JLD2 = "~0.4.46"
+Parameters = "~0.12.3"
 Plots = "~1.40.4"
+Setfield = "~1.1.1"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.2"
+julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "46197015d3eaa0ead627826c1cf7e5f7ed62c9de"
+project_hash = "e169dbcb99c5e1b09fc7eb5f271538f8f40d344c"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "016833eb52ba2d6bea9fcb50ca295980e728ee24"
@@ -221,9 +161,21 @@ version = "1.1.1"
 
 [[deps.ArnoldiMethod]]
 deps = ["LinearAlgebra", "Random", "StaticArrays"]
-git-tree-sha1 = "d57bd3762d308bded22c3b82d033bff85f6195c6"
+git-tree-sha1 = "62e51b39331de8911e4a7ff6f5aaf38a5f4cc0ae"
 uuid = "ec485272-7323-5ecc-a04f-4719b315124d"
-version = "0.4.0"
+version = "0.2.0"
+
+[[deps.Arpack]]
+deps = ["Arpack_jll", "Libdl", "LinearAlgebra", "Logging"]
+git-tree-sha1 = "91ca22c4b8437da89b030f08d71db55a379ce958"
+uuid = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
+version = "0.5.3"
+
+[[deps.Arpack_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "OpenBLAS_jll", "Pkg"]
+git-tree-sha1 = "5ba6c757e8feccf03a1554dfaf3e26b3cfc7fd5e"
+uuid = "68821587-b530-5797-8361-c406ea357684"
+version = "3.5.1+1"
 
 [[deps.ArrayInterface]]
 deps = ["Adapt", "LinearAlgebra", "SparseArrays", "SuiteSparse"]
@@ -264,6 +216,12 @@ weakdeps = ["SparseArrays"]
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
+[[deps.BSplineKit]]
+deps = ["ArrayLayouts", "BandedMatrices", "FastGaussQuadrature", "LinearAlgebra", "PrecompileTools", "Random", "Reexport", "SparseArrays", "Static", "StaticArrays", "StaticArraysCore"]
+git-tree-sha1 = "40946927f4799ea625086a14796087959d3c4fcc"
+uuid = "093aae92-e908-43d7-9660-e50ee39d5a0a"
+version = "0.17.1"
+
 [[deps.BandedMatrices]]
 deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra", "PrecompileTools"]
 git-tree-sha1 = "c946c5014cf4cdbfacacb363b110e7bffba3e742"
@@ -277,6 +235,12 @@ weakdeps = ["SparseArrays"]
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
+[[deps.BifurcationKit]]
+deps = ["ArnoldiMethod", "Arpack", "BlockArrays", "DataStructures", "Dates", "DocStringExtensions", "FastGaussQuadrature", "ForwardDiff", "IterativeSolvers", "KrylovKit", "LinearAlgebra", "LinearMaps", "Parameters", "Printf", "RecipesBase", "RecursiveArrayTools", "Reexport", "Requires", "SciMLBase", "Setfield", "SparseArrays", "StructArrays"]
+git-tree-sha1 = "513c88c2f38634c56c8058a72edc927225a8e32c"
+uuid = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
+version = "0.3.3"
+
 [[deps.BitFlags]]
 git-tree-sha1 = "2dc09997850d68179b69dafb58ae806167a32b1b"
 uuid = "d1d4a3ce-64b1-5f1a-9ba4-7e7e69966f35"
@@ -287,6 +251,12 @@ deps = ["Static"]
 git-tree-sha1 = "0c5f81f47bbbcf4aea7b2959135713459170798b"
 uuid = "62783981-4cbd-42fc-bca8-16325de8dc4b"
 version = "0.1.5"
+
+[[deps.BlockArrays]]
+deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra"]
+git-tree-sha1 = "9a9610fbe5779636f75229e423e367124034af41"
+uuid = "8e7c35d0-a365-5155-bbbb-fb81a777f24e"
+version = "0.16.43"
 
 [[deps.BoundaryValueDiffEq]]
 deps = ["ADTypes", "Adapt", "ArrayInterface", "BandedMatrices", "ConcreteStructs", "DiffEqBase", "FastAlmostBandedMatrices", "FastClosures", "ForwardDiff", "LinearAlgebra", "LinearSolve", "Logging", "NonlinearSolve", "OrdinaryDiffEq", "PreallocationTools", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "Setfield", "SparseArrays", "SparseDiffTools"]
@@ -403,7 +373,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.1.0+0"
+version = "1.0.5+1"
 
 [[deps.CompositionsBase]]
 git-tree-sha1 = "802bb88cd69dfd1509f6670416bd4434015693ad"
@@ -669,11 +639,23 @@ git-tree-sha1 = "acebe244d53ee1b461970f8910c235b259e772ef"
 uuid = "9aa1b823-49e4-5ca5-8b0f-3971ec8bab6a"
 version = "0.3.2"
 
+[[deps.FastGaussQuadrature]]
+deps = ["LinearAlgebra", "SpecialFunctions", "StaticArrays"]
+git-tree-sha1 = "fd923962364b645f3719855c88f7074413a6ad92"
+uuid = "442a2c76-b920-505d-bb47-c5924d526838"
+version = "1.0.2"
+
 [[deps.FastLapackInterface]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "0a59c7d1002f3131de53dc4568a47d15a44daef7"
 uuid = "29a986be-02c6-4525-aec4-84b980013641"
 version = "2.0.2"
+
+[[deps.FileIO]]
+deps = ["Pkg", "Requires", "UUIDs"]
+git-tree-sha1 = "82d8afa92ecf4b52d78d869f038ebfb881267322"
+uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+version = "1.16.3"
 
 [[deps.FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
@@ -816,9 +798,9 @@ version = "1.3.14+0"
 
 [[deps.Graphs]]
 deps = ["ArnoldiMethod", "Compat", "DataStructures", "Distributed", "Inflate", "LinearAlgebra", "Random", "SharedArrays", "SimpleTraits", "SparseArrays", "Statistics"]
-git-tree-sha1 = "3863330da5466410782f2bffc64f3d505a6a8334"
+git-tree-sha1 = "899050ace26649433ef1af25bc17a815b3db52b7"
 uuid = "86223c79-3864-5bf0-83f7-82e725a168b6"
-version = "1.10.0"
+version = "1.9.0"
 
 [[deps.Grisu]]
 git-tree-sha1 = "53bb909d1151e57e2484c3d1b53e19552b887fb2"
@@ -884,10 +866,22 @@ git-tree-sha1 = "630b497eafcc20001bba38a4651b327dcfc491d2"
 uuid = "92d709cd-6900-40b7-9082-c6be49f344b6"
 version = "0.2.2"
 
+[[deps.IterativeSolvers]]
+deps = ["LinearAlgebra", "Printf", "Random", "RecipesBase", "SparseArrays"]
+git-tree-sha1 = "59545b0a2b27208b0650df0a46b8e3019f85055b"
+uuid = "42fd0dbc-a981-5370-80f2-aaf504508153"
+version = "0.9.4"
+
 [[deps.IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
 uuid = "82899510-4779-5014-852e-03e436cf321d"
 version = "1.0.0"
+
+[[deps.JLD2]]
+deps = ["FileIO", "MacroTools", "Mmap", "OrderedCollections", "Pkg", "PrecompileTools", "Printf", "Reexport", "Requires", "TranscodingStreams", "UUIDs"]
+git-tree-sha1 = "5ea6acdd53a51d897672edb694e3cc2912f3f8a7"
+uuid = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+version = "0.4.46"
 
 [[deps.JLFzf]]
 deps = ["Pipe", "REPL", "Random", "fzf_jll"]
@@ -934,6 +928,12 @@ deps = ["LinearAlgebra", "Printf", "SparseArrays"]
 git-tree-sha1 = "8a6837ec02fe5fb3def1abc907bb802ef11a0729"
 uuid = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
 version = "0.9.5"
+
+[[deps.KrylovKit]]
+deps = ["ChainRulesCore", "GPUArraysCore", "LinearAlgebra", "Printf"]
+git-tree-sha1 = "5cebb47f472f086f7dd31fb8e738a8db728f1f84"
+uuid = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
+version = "0.6.1"
 
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1088,6 +1088,18 @@ version = "7.2.0"
 [[deps.LinearAlgebra]]
 deps = ["Libdl", "OpenBLAS_jll", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
+[[deps.LinearMaps]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "9948d6f8208acfebc3e8cf4681362b2124339e7e"
+uuid = "7a12625a-238d-50fd-b39a-03d52299707e"
+version = "3.11.2"
+weakdeps = ["ChainRulesCore", "SparseArrays", "Statistics"]
+
+    [deps.LinearMaps.extensions]
+    LinearMapsChainRulesCoreExt = "ChainRulesCore"
+    LinearMapsSparseArraysExt = "SparseArrays"
+    LinearMapsStatisticsExt = "Statistics"
 
 [[deps.LinearSolve]]
 deps = ["ArrayInterface", "ChainRulesCore", "ConcreteStructs", "DocStringExtensions", "EnumX", "FastLapackInterface", "GPUArraysCore", "InteractiveUtils", "KLU", "Krylov", "LazyArrays", "Libdl", "LinearAlgebra", "MKL_jll", "Markdown", "PrecompileTools", "Preferences", "RecursiveFactorization", "Reexport", "SciMLBase", "SciMLOperators", "Setfield", "SparseArrays", "Sparspak", "StaticArraysCore", "UnPack"]
@@ -1299,7 +1311,7 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.23+4"
+version = "0.3.23+2"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1840,6 +1852,19 @@ git-tree-sha1 = "b164d4dc04d7072066b725b7906e56331b170004"
 uuid = "7792a7ef-975c-4747-a70f-980b88e8d1da"
 version = "0.5.3"
 
+[[deps.StructArrays]]
+deps = ["ConstructionBase", "DataAPI", "Tables"]
+git-tree-sha1 = "f4dc295e983502292c4c3f951dbb4e985e35b3be"
+uuid = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
+version = "0.6.18"
+weakdeps = ["Adapt", "GPUArraysCore", "SparseArrays", "StaticArrays"]
+
+    [deps.StructArrays.extensions]
+    StructArraysAdaptExt = "Adapt"
+    StructArraysGPUArraysCoreExt = "GPUArraysCore"
+    StructArraysSparseArraysExt = "SparseArrays"
+    StructArraysStaticArraysExt = "StaticArrays"
+
 [[deps.SuiteSparse]]
 deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
 uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
@@ -2286,19 +2311,18 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═72fa8994-47dc-4e0c-80fd-021f5fc629e9
-# ╠═163d352d-ce42-4828-a418-520033c23719
-# ╠═fca48a5c-d1f0-4069-85c9-71c6b612b25f
-# ╠═e58881c1-3f0c-4b82-b787-37325442226e
-# ╠═5b882fed-1fed-4a61-99a5-0ee032ffbf9c
-# ╠═6498cd44-5afd-4247-9f9c-5485987f16a3
-# ╠═d29c6a53-a627-42c5-8fe7-b6c6a6aaae87
-# ╠═a354d761-9cc4-4e61-b483-2ae20df06ecf
-# ╠═be7e08d5-39f4-415a-9968-5758a3ae7534
-# ╠═94fe855c-24b9-4c8f-8f06-b0259cfe84f3
-# ╠═b02777cb-e41a-43f4-ada1-248ffafbdec5
-# ╠═82216a23-e1f2-4010-b78e-ff5f3e0c2a5c
-# ╠═ceef1065-3696-4c5e-ba28-f68a5e76612f
-# ╟─4f04d9a1-3e58-4ead-b5c4-daf4d88e9f29
+# ╠═9e372d70-f6af-11ee-10b3-2150e19c755b
+# ╠═f667d681-a2c4-4b04-a641-32692df1c5c2
+# ╠═71656988-ec80-460d-b887-fc2551e34529
+# ╠═3428e9ea-3c82-44b0-8f94-61ffe6b55e94
+# ╠═e48feb36-124e-41bf-a65f-871b852ca23a
+# ╠═3fdb9050-22b9-4d42-8785-1fb96d08f117
+# ╠═e8c305eb-01c3-4f5f-a227-0c716edba03f
+# ╠═ed2783c8-20dd-4ef9-9035-8c796b0ba61c
+# ╠═d0801afa-74fd-4366-b035-998ca11864a6
+# ╠═a0b3eac9-7fbd-43b2-9c91-d1ed574b7bc8
+# ╠═5e1e805d-f329-4671-b392-514238f09af1
+# ╠═72843cfa-f550-49f1-85b5-31fcc0addac9
+# ╟─a0e34f60-e242-43af-87ae-17c9575ad1dc
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
