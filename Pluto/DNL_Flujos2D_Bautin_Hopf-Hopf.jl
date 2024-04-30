@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.39
+# v0.19.41
 
 using Markdown
 using InteractiveUtils
@@ -243,21 +243,28 @@ flux2d_nullclines(bautin!,[x0;y0],tmax,[μ,k,σ,ξ],xlims=[-5,5],ylims=[-3,3],np
 
 # ╔═╡ 944a42df-4696-41f1-bc48-da1adaac122b
 md"""
-x10 $(@bind x10 Slider(-1.0:0.01:2.0,default=0.1;show_value=true)) $sp
-x20 $(@bind x20 Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
 μ1 : $(@bind μ1 Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) $sp
 μ2 : $(@bind μ2 Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) \
-k1 : $(@bind k1 Slider(0.01:0.01:2.0,default=1.0;show_value=true)) $sp
-k2 : $(@bind k2 Slider(0.01:0.01:2.0,default=1.0;show_value=true)) \
-c12 : $(@bind c12 Slider(-1.0:0.01:1.0,default=0.0;show_value=true)) $sp
-c21 : $(@bind c21 Slider(-1.0:0.01:1.0,default=0.0;show_value=true)) \
-σ : $(@bind σ2 Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) $sp
-tmax : $(@bind tmax2 Slider(10:10:3000.0,default=10.0;show_value=true)) 	
+kc : $(@bind kc Slider(0.01:0.01:2.0,default=1.0;show_value=true)) $sp
+c : $(@bind c Slider(0.0:0.01:1.0,default=0.1;show_value=true)) \
+k : $(@bind k2 Slider(0.01:0.01:2.0,default=1.0;show_value=true)) $sp
+σ $(@bind σs Select([1 => "positive", -1 => "negative"]))  $sp $sp $sp
+Coupling $(@bind cs Select([[1,1] => "coupling ++", [-1,-1] => "coupling --", [1,-1] => "coupling +-"])) \
+tmax : $(@bind tmax2 Slider(100:100:3000.0,default=10.0;show_value=true)) 	
 """
+
+# ╔═╡ e01862c2-1794-45f8-9139-6c3f79c1be3c
+begin
+	k1 = kc*k2
+	σ2 = σs*0.1
+	c12 = cs[2]*c
+	c21 = cs[1]*c
+end	
 
 # ╔═╡ b07e11bc-635f-4ab6-9ec3-b4c89d0347be
 begin
-	sol1 = solve(ODEProblem(dhopf!, [x10;0.0;x20;0.0],tmax2,[μ1,μ2,k1,k2,σ2,c12,c21,-0.1]));
+	temp = solve(ODEProblem(dhopf!, [1.0;0.0;1.0;0.0],500,[μ1,μ2,k1,k2,σ2,c12,c21,-0.1]));
+	sol1 = solve(ODEProblem(dhopf!, temp.u[end],tmax2,[μ1,μ2,k1,k2,σ2,c12,c21,-0.1]));
 	p1b = plot(sol1,idxs=(1,2),arrow=true)
 	p2b = plot(sol1,idxs=(3,4),arrow=true)
 	plot(p1b,p2b,layout=(1,2),size = (900,450),title="Double Hopf")
@@ -268,17 +275,6 @@ begin
 	plot(sol1,idxs=(0,1),size=(1000,300),label="x1")
 	plot!(sol1,idxs=(0,3),size=(1000,300),label="x2")
 end	
-
-# ╔═╡ eebdc7e9-1ecc-481f-936e-9ea0da2332ea
- 
-md"""
-x0 $(@bind x0_reed Slider(-1.0:0.01:2.0,default=0.1;show_value=true)) $sp 
-y0 $(@bind y0_reed Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
-μ : $(@bind μ_reed Slider(-1.0:0.01:1.0,default=0.1;show_value=true)) $sp 
-k $(@bind k_reed Slider(0.0:0.1:1.0,default=0.1;show_value=true)) \
-v0 : $(@bind v0 Slider(-1.0:0.01:1.0,default=0.1;show_value=true)) $sp
-tmax : $(@bind tmax_reed Slider(10:10:300,default=0.1;show_value=true)) 
-"""	
 
 # ╔═╡ Cell order:
 # ╠═bc0b7062-f045-11ee-260f-f99d879c90be
@@ -295,7 +291,7 @@ tmax : $(@bind tmax_reed Slider(10:10:300,default=0.1;show_value=true))
 # ╠═bdcf36f8-a090-4a8a-a3a3-838defcc5b78
 # ╟─b07e11bc-635f-4ab6-9ec3-b4c89d0347be
 # ╟─944a42df-4696-41f1-bc48-da1adaac122b
-# ╠═32cec679-0d93-4d26-a736-e0e6c1058f89
-# ╟─eebdc7e9-1ecc-481f-936e-9ea0da2332ea
+# ╟─e01862c2-1794-45f8-9139-6c3f79c1be3c
+# ╟─32cec679-0d93-4d26-a736-e0e6c1058f89
 # ╟─53b50ba4-a968-4b6c-8496-031b5d72f558
 # ╟─c59e2248-b18b-4ea1-a8ea-9b300de44f13
