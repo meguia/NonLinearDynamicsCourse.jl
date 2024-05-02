@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.40
+# v0.19.41
 
 using Markdown
 using InteractiveUtils
@@ -90,64 +90,86 @@ end
   ╠═╡ =#
 
 # ╔═╡ d9c3004c-3d87-4912-b05f-17130e6e1394
-par_d = (μ1=-0.1,μ2=0.1,k1=1.0,k2=1.0,σ2=-0.2,c12=-0.1,c21=-0.1,ξ=-0.2)
+par_d = (μ1=-0.1,μ2=0.1,k1=0.1*0.3,k2=0.1,σ2=0.2,c12=-0.1,c21=-0.1,ξ=-0.1)
 
 # ╔═╡ 66d4a4d6-bf9b-4069-9110-d30e17f34871
 begin
-	c21_list = 0.05:0.05:0.15
-	c12_list = 0.05:0.05:0.15
-	k_list = 0.1:0.1:0.9
-	coef_ns1 = zeros(length(c21_list),2)
-	coef_k1 = zeros(length(k_list),2)
-	coef_ns2 = zeros(length(c21_list),2)
-	coef_k2 = zeros(length(k_list),2)
-	# Variando C21 y K2
-	for m = 1:length(k_list)
-		for n=1:length(c12_list)
-			prob_temp = BifurcationProblem(dhopf, [0.1; 0.0; 0.1; 0.0], setproperties(par_d,(c12=c12_list[n],k1=k_list[m])), (@lens _.μ1),record_from_solution = (x, p) -> x[1]);
-			br_temp = continuation(prob_temp, PALC(), opts_br2, bothside = true);
-			hopf_temp = continuation(br_temp, 2, (@lens _.μ2), opts_br2, normC = norminf, bothside = true, update_minaug_every_step = 2, detect_codim2_bifurcation = 2);
-			ns_temp1 = continuation(hopf_temp, 2, opts_ns, PeriodicOrbitOCollProblem(20, 3, update_section_every_step = 1);detect_codim2_bifurcation = 0, normC = norminf,	δp = 0.02, update_minaug_every_step = 1, whichns = 1,jacobian_ma = :minaug);
-			ns_temp2 = continuation(hopf_temp, 2, opts_ns, PeriodicOrbitOCollProblem(20, 3, update_section_every_step = 1);detect_codim2_bifurcation = 0, normC = norminf,	δp = 0.02, update_minaug_every_step = 1, whichns = 2,jacobian_ma = :minaug);
-			df1= DataFrame(x=ns_temp1.μ1,y=ns_temp1.μ2)
-			model1 = lm(@formula(y ~ x + x^2 ), df1)
-			coef_ns1[n,:] = coef(model1)[2:end]
-			df2= DataFrame(x=ns_temp2.μ1,y=ns_temp2.μ2)
-			model2 = lm(@formula(y ~ x + x^2 ), df2)
-			coef_ns2[n,:] =coef(model2)[2:end]
-		end
-		dfn1 = DataFrame(x=c12_list,y=coef_ns2[:,1])
-		dfn2 = DataFrame(x=c12_list,y=coef_ns2[:,2])
-		modeln1 = lm(@formula(y ~ x ), dfn1)
-		modeln2 = lm(@formula(y ~ x ), dfn2)
-		coef_k1[m,1] = coef(modeln1)[end]
-		coef_k1[m,2] = coef(modeln2)[end]
-	end	
+	c_list = 0.05:0.05:0.5
+	coef_ns1 = zeros(length(c_list),2)
+	coef_ns2 = zeros(length(c_list),2)
+	# Variando C y K
+	plt1=plot()
+	for n=1:length(c_list)
+		prob_temp = BifurcationProblem(dhopf, [0.1; 0.0; 0.1; 0.0], setproperties(par_d,(c12=c_list[n],c21=c_list[n])), (@lens _.μ1),record_from_solution = (x, p) -> x[1]);
+		br_temp = continuation(prob_temp, PALC(), opts_br2, bothside = true);
+		hopf_temp = continuation(br_temp, 2, (@lens _.μ2), opts_br2, normC = norminf, bothside = true, update_minaug_every_step = 2, detect_codim2_bifurcation = 2);
+		ns_temp1 = continuation(hopf_temp, 2, opts_ns, PeriodicOrbitOCollProblem(20, 3, update_section_every_step = 1);detect_codim2_bifurcation = 0, normC = norminf,	δp = 0.02, update_minaug_every_step = 1, whichns = 1,jacobian_ma = :minaug);
+		ns_temp2 = continuation(hopf_temp, 2, opts_ns, PeriodicOrbitOCollProblem(20, 3, update_section_every_step = 1);detect_codim2_bifurcation = 0, normC = norminf,	δp = 0.02, update_minaug_every_step = 1, whichns = 2,jacobian_ma = :minaug);
+		scatter!(plt1,ns_temp1,c=:red)
+		scatter!(plt1,ns_temp2,c=:blue)
+		df1= DataFrame(x=ns_temp1.μ1,y=ns_temp1.μ2)
+		model1 = lm(@formula(y ~ x + x^2 ), df1)
+		coef_ns1[n,:] = coef(model1)[2:end]
+		df2= DataFrame(x=ns_temp2.μ2,y=ns_temp2.μ1)
+		model2 = lm(@formula(y ~ x + x^2 ), df2)
+		coef_ns2[n,:] =coef(model2)[2:end]
+	end
+	plt1
 end	
 
-# ╔═╡ 71782113-1cd6-4cde-9a2b-7e9029533207
-coef_ns2
+# ╔═╡ 2b05fe3a-af42-4182-baf0-b3392895f8ad
+plt1
 
-# ╔═╡ 590ea5c0-5582-49e7-b241-a0448f47d2bb
+# ╔═╡ b8371c16-3666-489c-8c63-a36cf6e74096
 begin
-	dfk1= DataFrame(x=k_list,y=coef_k1[:,1])
-	dfk2= DataFrame(x=k_list,y=coef_k1[:,2])
-	modelk1 = lm(@formula(y ~ x + x^2 ), dfk1)
-	modelk2 = lm(@formula(y ~ x + x^2 ), dfk2)
-end;
+	plot(plt1,size=(1200,1200),xlims=(-0.2,0.15),ylims=(-0.2,0.15))
+	m1=-0.15:0.01:0
+	m2=0:0.01:0.15
+	for n=1:10
+		plot!(plt1,coef_ns1[n,1]*m1+coef_ns1[n,2]*m1.^2,m1,c=:red)
+		#plot!(plt1,coef_ns2[n,1]*m1+coef_ns2[n,2]*m1.^2,m1,c=:black)
+		plot!(plt1,m1,coef_ns2[n,1]*m1+coef_ns2[n,2]*m1.^2,c=:blue)
+		#plot!(plt1,m1,coef_ns1[n,1]*m1+coef_ns1[n,2]*m1.^2,c=:green,size=(1200,1200),xlims=(-0.2,0.15),ylims=(-0.2,0.15))
+	end	
+	plot!(plt1,size=(1200,1200),xlims=(-0.2,0.15),ylims=(-0.2,0.15))
+end	
+
+# ╔═╡ 881c4dbe-e059-476e-9cda-ba1db682ad51
+begin
+	plt2 = plot(size=(800,600),xlims=(-0.15,0.15),ylims=(-0.15,0.15))
+	for n=1:10
+		plot!(plt2,coef_ns1[n,1]*m1+coef_ns1[n,2]*m1.^2,m1,c=:red,label="")
+		plot!(plt2,m1,coef_ns2[n,1]*m1+coef_ns2[n,2]*m1.^2,c=:blue,label="")
+	end	
+	plt2
+end	
+
+# ╔═╡ 4e8a6dd8-c845-40fd-ac54-39b32235f1e3
+1 ./coef_ns2[:,1]
 
 # ╔═╡ 39fcc16a-cfa1-4ece-89d1-6fbbcdcf5950
 begin
-	scatter(k_list,coef_k1)
-	plot!(k_list,predict(modelk1,DataFrame(x=k_list)))
-	plot!(k_list,predict(modelk2,DataFrame(x=k_list)))
+	df1= DataFrame(x=collect(c_list),y=1 ./coef_ns1[:,1])
+	model1 = lm(@formula(y ~ x ), df1)
+	df2= DataFrame(x=c_list,y=1 ./coef_ns1[:,2])
+	model2 = lm(@formula(y ~ x^2 ), df2)
+	df3= DataFrame(x=c_list,y=1 ./coef_ns2[:,2])
+	model3 = lm(@formula(y ~ x^2 ), df3)
+	scatter(c_list,1 ./coef_ns1)
+	scatter!(c_list,1 ./coef_ns2)
+	plot!(c_list,coef(model1)[2]*c_list)
+	plot!(c_list,coef(model2)[2]*c_list.^2)
+	plot!(c_list,coef(model3)[2]*c_list.^2)
 end	
 
-# ╔═╡ e8def0f3-8f1c-4ee2-9b32-531f5b4962b5
-coef(modelk1)
+# ╔═╡ 7f4d68ee-f91a-4c62-be5b-b0d5dfa97dbd
+coef(model2)
 
-# ╔═╡ e832480c-678c-4724-9143-a997b9c9d27b
-coef(modelk2)
+# ╔═╡ b61caeed-0c99-440f-9962-5124c3897c4a
+coef(model1)
+
+# ╔═╡ a26dc410-9b7e-46d1-9eb5-f43def33baa3
+coef(model3)
 
 # ╔═╡ 53b50ba4-a968-4b6c-8496-031b5d72f558
 html"""
@@ -2456,11 +2478,14 @@ version = "1.4.1+1"
 # ╠═d176c4c0-8d96-49fd-a1d8-d58598cb3be4
 # ╠═d9c3004c-3d87-4912-b05f-17130e6e1394
 # ╠═66d4a4d6-bf9b-4069-9110-d30e17f34871
-# ╠═71782113-1cd6-4cde-9a2b-7e9029533207
-# ╠═590ea5c0-5582-49e7-b241-a0448f47d2bb
+# ╠═2b05fe3a-af42-4182-baf0-b3392895f8ad
+# ╠═b8371c16-3666-489c-8c63-a36cf6e74096
+# ╠═881c4dbe-e059-476e-9cda-ba1db682ad51
+# ╠═4e8a6dd8-c845-40fd-ac54-39b32235f1e3
 # ╠═39fcc16a-cfa1-4ece-89d1-6fbbcdcf5950
-# ╠═e8def0f3-8f1c-4ee2-9b32-531f5b4962b5
-# ╠═e832480c-678c-4724-9143-a997b9c9d27b
+# ╠═7f4d68ee-f91a-4c62-be5b-b0d5dfa97dbd
+# ╠═b61caeed-0c99-440f-9962-5124c3897c4a
+# ╠═a26dc410-9b7e-46d1-9eb5-f43def33baa3
 # ╟─53b50ba4-a968-4b6c-8496-031b5d72f558
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
