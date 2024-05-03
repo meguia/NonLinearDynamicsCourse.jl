@@ -226,17 +226,20 @@ begin
 	k : $(@bind k Slider(0.01:0.01:2.0,default=1.0;show_value=true)) \
 	σ : $(@bind σ Slider(-1.0:0.01:1.0,default=0.1;show_value=true)) $sp 
 	ξ : $(@bind ξ Slider(-1.0:0.01:-0.01,default=-0.1;show_value=true)) \
-	tmax : $(@bind tmax Slider(10:10:3000.0,default=10.0;show_value=true)) 
+	tmax : $(@bind tmax Slider(10:10:30000.0,default=10.0;show_value=true)) 
 	"""
 end	
 
 # ╔═╡ cc1e8cbc-1088-4ae0-bad0-8dcc83b98f22
 begin
 	sol = solve(ODEProblem(bautin!, [x0;y0],tmax,[μ,k,σ,ξ]));
-	p1 = plot(sol)
+	p1 = plot(sol,idxs=(0,1))
     p2 = plot(sol,idxs=(1,2),arrow=true)
 	plot(p1,p2,layout=(1,2),size = (900,450),title="Bautin")
 end	
+
+# ╔═╡ 32afb51c-6c09-43a6-806d-a7b4f8e19a6f
+plot(sol, idxs = ((t,x) -> (t,abs(x)),0, 1),yaxis=:log10)
 
 # ╔═╡ 5621e2f8-69b1-4bcc-a347-704d6e1bc235
 flux2d_nullclines(bautin!,[x0;y0],tmax,[μ,k,σ,ξ],xlims=[-5,5],ylims=[-3,3],npts=60,title="Bautin")
@@ -253,10 +256,23 @@ Coupling $(@bind cs Select([[1,1] => "coupling ++", [-1,-1] => "coupling --", [1
 tmax : $(@bind tmax2 Slider(100:100:3000.0,default=10.0;show_value=true)) 	
 """
 
+# ╔═╡ 12218925-ce5d-4684-9609-5fc2a8d5ff25
+begin
+	m=-0.4:0.01:0.4
+	m1=-0.2:0.01:0
+	ns1 = -σ*0.01*m1/c+1/16.2*(m1/c).^2
+	ns2 = -σ*0.01*m1/c+1/18.5*(m1/c).^2
+	plot(m,m*0,c=:black)
+	plot!(m*0,m,c=:black)
+	scatter!([μ2],[μ1])
+	plot!(ns1,m1,c=:red)
+	plot!(m1,ns2,c=:red,size=(600,400),xlims=(-0.4,0.4),ylims=(-0.4,0.4))
+end	
+
 # ╔═╡ e01862c2-1794-45f8-9139-6c3f79c1be3c
 begin
 	k1 = kc*k2
-	σ2 = σs*0.1
+	σ2 = σs*0.2
 	c12 = cs[2]*c
 	c21 = cs[1]*c
 end	
@@ -283,15 +299,17 @@ end
 # ╟─787ce7fe-8a11-48c3-aca9-9a4c0ac4dbd2
 # ╟─c2177a4c-cff4-4c7a-86f4-629b60e13a63
 # ╠═0d7be9cf-763d-4781-b747-ee4f99fabeee
+# ╠═32afb51c-6c09-43a6-806d-a7b4f8e19a6f
 # ╠═cc1e8cbc-1088-4ae0-bad0-8dcc83b98f22
-# ╟─f3ac4ce9-d182-4b75-875e-274ee2a7f470
+# ╠═f3ac4ce9-d182-4b75-875e-274ee2a7f470
 # ╠═5621e2f8-69b1-4bcc-a347-704d6e1bc235
 # ╠═c8148366-9fab-4ef4-8ac8-0bb6421ce68e
 # ╟─ef53daf7-7d49-4763-8f3c-01aec8a105f1
 # ╠═bdcf36f8-a090-4a8a-a3a3-838defcc5b78
-# ╟─b07e11bc-635f-4ab6-9ec3-b4c89d0347be
+# ╠═b07e11bc-635f-4ab6-9ec3-b4c89d0347be
 # ╟─944a42df-4696-41f1-bc48-da1adaac122b
-# ╟─e01862c2-1794-45f8-9139-6c3f79c1be3c
+# ╟─12218925-ce5d-4684-9609-5fc2a8d5ff25
+# ╠═e01862c2-1794-45f8-9139-6c3f79c1be3c
 # ╟─32cec679-0d93-4d26-a736-e0e6c1058f89
 # ╟─53b50ba4-a968-4b6c-8496-031b5d72f558
 # ╟─c59e2248-b18b-4ea1-a8ea-9b300de44f13

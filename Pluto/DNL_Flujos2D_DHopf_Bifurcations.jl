@@ -31,14 +31,20 @@ function dhopf(u,p)
 	]
 end
 
+# ╔═╡ eb6a78df-d641-415c-b05b-0ae9f53f38de
+opts_br2 = ContinuationPar(p_max = 0.2, p_min = -0.2,dsmax=0.01,dsmin=1e-4,ds=1e-4,max_steps = 30,n_inversion = 4);
+
+# ╔═╡ 0675eeb4-09a8-41dd-9257-a9e843dd54f7
+opts_ns = ContinuationPar(opts_br2, detect_bifurcation = 1, max_steps = 40, detect_event = 0, ds = 0.001);
+
+# ╔═╡ d9c3004c-3d87-4912-b05f-17130e6e1394
+par_d = (μ1=-0.1,μ2=0.1,k1=0.1*0.3,k2=0.1,σ2=0.2,c12=-0.1,c21=-0.1,ξ=-0.1)
+
 # ╔═╡ 84aff82e-42db-486f-8081-8ac718f54a1d
 # ╠═╡ disabled = true
 #=╠═╡
 prob2 = BifurcationProblem(dhopf, [0.1; 0.0; 0.1; 0.0], par_d, (@lens _.μ1),record_from_solution = (x, p) -> x[1]);
   ╠═╡ =#
-
-# ╔═╡ eb6a78df-d641-415c-b05b-0ae9f53f38de
-opts_br2 = ContinuationPar(p_max = 0.2, p_min = -0.2,dsmax=0.01,dsmin=1e-4,ds=1e-4,max_steps = 30,n_inversion = 4);
 
 # ╔═╡ 0df18c34-9d72-4893-9245-abee78baeebd
 # ╠═╡ disabled = true
@@ -51,9 +57,6 @@ br2 = continuation(prob2, PALC(), opts_br2, bothside = true);
 #=╠═╡
 	hopf_1 = continuation(br2, 2, (@lens _.μ2), opts_br2, normC = norminf, bothside = true, update_minaug_every_step = 2, detect_codim2_bifurcation = 2);
   ╠═╡ =#
-
-# ╔═╡ 0675eeb4-09a8-41dd-9257-a9e843dd54f7
-opts_ns = ContinuationPar(opts_br2, detect_bifurcation = 1, max_steps = 40, detect_event = 0, ds = 0.001);
 
 # ╔═╡ 458beebf-9853-4559-8498-7c307cee03d8
 # ╠═╡ disabled = true
@@ -69,16 +72,6 @@ ns_po2 = continuation(hopf_1, 2, opts_ns, PeriodicOrbitOCollProblem(20, 3, updat
 		detect_codim2_bifurcation = 0, normC = norminf,	δp = 0.02, update_minaug_every_step = 1, whichns = 2,jacobian_ma = :minaug);
   ╠═╡ =#
 
-# ╔═╡ 3812323a-b87d-4ea8-8dee-72f0720b5b53
-#=╠═╡
-begin
-	plot(hopf_1,branchlabel = "Hopf 1")
-	#plot!(hopf_1b,vars=(:μ2,:μ1),branchlabel = "Hopf 2")
-	plot!(ns_po1,branchlabel = "Neimark Sacker 1")
-	plot!(ns_po2,branchlabel = "Neimark Sacker 2")
-end	
-  ╠═╡ =#
-
 # ╔═╡ d176c4c0-8d96-49fd-a1d8-d58598cb3be4
 #=╠═╡
 begin
@@ -89,8 +82,15 @@ begin
 end	
   ╠═╡ =#
 
-# ╔═╡ d9c3004c-3d87-4912-b05f-17130e6e1394
-par_d = (μ1=-0.1,μ2=0.1,k1=0.1*0.3,k2=0.1,σ2=0.2,c12=-0.1,c21=-0.1,ξ=-0.1)
+# ╔═╡ 3812323a-b87d-4ea8-8dee-72f0720b5b53
+#=╠═╡
+begin
+	plot(hopf_1,branchlabel = "Hopf 1")
+	#plot!(hopf_1b,vars=(:μ2,:μ1),branchlabel = "Hopf 2")
+	plot!(ns_po1,branchlabel = "Neimark Sacker 1")
+	plot!(ns_po2,branchlabel = "Neimark Sacker 2")
+end	
+  ╠═╡ =#
 
 # ╔═╡ 66d4a4d6-bf9b-4069-9110-d30e17f34871
 begin
@@ -149,27 +149,33 @@ end
 
 # ╔═╡ 39fcc16a-cfa1-4ece-89d1-6fbbcdcf5950
 begin
-	df1= DataFrame(x=collect(c_list),y=1 ./coef_ns1[:,1])
-	model1 = lm(@formula(y ~ x ), df1)
-	df2= DataFrame(x=c_list,y=1 ./coef_ns1[:,2])
-	model2 = lm(@formula(y ~ x^2 ), df2)
-	df3= DataFrame(x=c_list,y=1 ./coef_ns2[:,2])
-	model3 = lm(@formula(y ~ x^2 ), df3)
+	df1a= DataFrame(x=collect(c_list),y=1 ./coef_ns1[:,1])
+	model1a = lm(@formula(y ~ x ), df1a)
+	df1b= DataFrame(x=collect(c_list),y=1 ./coef_ns2[:,1])
+	model1b = lm(@formula(y ~ x ), df1b)
+	df2a= DataFrame(x=c_list,y=1 ./coef_ns1[:,2])
+	model2a = lm(@formula(y ~ x^2 ), df2a)
+	df2b= DataFrame(x=c_list,y=1 ./coef_ns2[:,2])
+	model2b = lm(@formula(y ~ x^2 ), df2b)
 	scatter(c_list,1 ./coef_ns1)
 	scatter!(c_list,1 ./coef_ns2)
-	plot!(c_list,coef(model1)[2]*c_list)
-	plot!(c_list,coef(model2)[2]*c_list.^2)
-	plot!(c_list,coef(model3)[2]*c_list.^2)
+	plot!(c_list,coef(model1a)[2]*c_list)
+	plot!(c_list,coef(model1b)[2]*c_list)
+	plot!(c_list,coef(model2a)[2]*c_list.^2)
+	plot!(c_list,coef(model2b)[2]*c_list.^2)
 end	
 
 # ╔═╡ 7f4d68ee-f91a-4c62-be5b-b0d5dfa97dbd
-coef(model2)
+coef(model1a)
 
 # ╔═╡ b61caeed-0c99-440f-9962-5124c3897c4a
-coef(model1)
+coef(model1b)
 
 # ╔═╡ a26dc410-9b7e-46d1-9eb5-f43def33baa3
-coef(model3)
+coef(model2a)
+
+# ╔═╡ dca1985b-275b-441b-939c-ec094e68f77d
+coef(model2b)
 
 # ╔═╡ 53b50ba4-a968-4b6c-8496-031b5d72f558
 html"""
@@ -2486,6 +2492,7 @@ version = "1.4.1+1"
 # ╠═7f4d68ee-f91a-4c62-be5b-b0d5dfa97dbd
 # ╠═b61caeed-0c99-440f-9962-5124c3897c4a
 # ╠═a26dc410-9b7e-46d1-9eb5-f43def33baa3
+# ╠═dca1985b-275b-441b-939c-ec094e68f77d
 # ╟─53b50ba4-a968-4b6c-8496-031b5d72f558
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
