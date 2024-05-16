@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.40
+# v0.19.42
 
 using Markdown
 using InteractiveUtils
@@ -55,15 +55,6 @@ input[type*="range"] {
 </style>
 """
 
-# ╔═╡ f667d681-a2c4-4b04-a641-32692df1c5c2
-function vreed(u,p)
-    @unpack μ,k,v0 = p
-	[
-		u[2]
-		(u[2] - v0)*(μ-(u[2] - v0)^2)-k*u[1]
-	]
-end    
-
 # ╔═╡ d0801afa-74fd-4366-b035-998ca11864a6
 begin
 	param = -0.1:0.01:1.5
@@ -89,6 +80,15 @@ begin
 		end
 	end	
 end	
+
+# ╔═╡ f667d681-a2c4-4b04-a641-32692df1c5c2
+function vreed(u,p)
+    @unpack μ,k,v0 = p
+	[
+		u[2]
+		(u[2] - v0)*(μ-(u[2] - v0)^2)-k*u[1]
+	]
+end    
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """

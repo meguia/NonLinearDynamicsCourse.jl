@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.40
+# v0.19.42
 
 using Markdown
 using InteractiveUtils
@@ -21,7 +21,7 @@ using Pkg; Pkg.activate(joinpath(dirname(pwd()) , "src"))
 push!(LOAD_PATH, joinpath(dirname(pwd()) , "src"))
 
 # ╔═╡ 9e372d70-f6af-11ee-10b3-2150e19c755b
-using DifferentialEquations, Plots, Parameters, Setfield, PlutoUI
+using DifferentialEquations, Plots, PlutoUI, JLD2, GLM, DataFrames
 
 # ╔═╡ 33881071-dbb1-49a0-abf9-8ead17364c18
 using NonLinearDynamicsCourse
@@ -32,6 +32,49 @@ function vreed!(du,u,p,t)
 	du[1] = u[2]
 	du[2] =	(u[2] - v0)*(μ-(u[2] - v0)^2)-k*u[1]
 end    
+
+# ╔═╡ 9de8957e-2cab-4f33-a4e8-02932a704022
+begin
+	saved_values = load("freed.jld2")
+	mu_v = saved_values["mu"]
+	v0_v = saved_values["v0"]
+	knotes = saved_values["knotes"]
+	ampl_v = saved_values["ampl"]
+	freq_v = saved_values["freq"]
+end;	
+
+# ╔═╡ 0064e75e-ed6b-4fed-a854-326d20edd543
+
+
+# ╔═╡ c96c5652-386b-4129-8dc8-e76ef4769c26
+begin 
+	x = sqrt.(knotes[2:end])
+	(nk, nv, nm) = size(freq_v)
+	a0v = zeros(nv,nm)
+	a1v = zeros(nv,nm)
+	for n = 1:nv
+		for m = 1:nm
+			df1= DataFrame(x=x,y=freq_v[2:end,n,m])
+			model1 = lm(@formula(y ~ x ), df1)
+			(a0v[n,m], a1v[n,m]) = coef(model1)
+		end
+	end	
+end	
+
+# ╔═╡ b0e216b3-ba23-429b-bce3-2ad715313138
+size(a0v)
+
+# ╔═╡ e5d21f12-a369-493f-b83f-7d88235ff2dc
+begin
+	plot(mu_v,a0v',label="")
+	plot!(mu_v,a0v[1,:],label="v0=0",lw=2,c=:black,xlabel="μ",ylabel="a0")
+end	
+
+# ╔═╡ 77007e68-52d2-4836-8732-2c758f64f061
+begin
+	plot(mu_v,a1v',label="")
+	plot!(mu_v,a1v[1,:],label="v0=0",lw=2,c=:black,xlabel="μ",ylabel="a1")
+end	
 
 # ╔═╡ c0af1a99-7acf-4f05-8c98-52c3f898391d
 md"""
@@ -51,8 +94,14 @@ begin
 	
 end	
 
+# ╔═╡ 3c7f6407-bfc8-480f-922d-b98e5c5a4b69
+flux2d_nullclines(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed],npts=41,xlims=[-6,6],ylims=[-1,2],title="Lengüeta (Rayleigh) Modificada")
+
 # ╔═╡ 1dc81c7c-514a-4af0-a3c2-452ee9f71fd3
+# ╠═╡ disabled = true
+#=╠═╡
 begin
+	#esto es para generar la figura del paper
 	sol1 = solve(ODEProblem(vreed!,[-0.1;0],tmax_vreed,[0.1 ,k_vreed, 0]),saveat=0.1)
 	sol2 = solve(ODEProblem(vreed!,[-0.1;0],tmax_vreed,[0.79 ,k_vreed, 0]),saveat=0.1)
 	plt1a = plot(sol1, idxs = (0,2),label="",ylabel="y",lc=:black,grid=false, title="μ=0.1, v₀=0")
@@ -65,9 +114,7 @@ begin
 	savefig(plt_all, "fig2.png")
 	plt_all
 end	
-
-# ╔═╡ 3c7f6407-bfc8-480f-922d-b98e5c5a4b69
-flux2d_nullclines(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed],npts=41,xlims=[-6,6],ylims=[-1,2],title="Lengüeta (Rayleigh) Modificada")
+  ╠═╡ =#
 
 # ╔═╡ a0e34f60-e242-43af-87ae-17c9575ad1dc
 html"""
@@ -87,8 +134,14 @@ input[type*="range"] {
 # ╠═33881071-dbb1-49a0-abf9-8ead17364c18
 # ╠═7c2fc40e-979f-4289-9b24-650a7364beac
 # ╠═f667d681-a2c4-4b04-a641-32692df1c5c2
+# ╠═9de8957e-2cab-4f33-a4e8-02932a704022
+# ╠═0064e75e-ed6b-4fed-a854-326d20edd543
+# ╠═c96c5652-386b-4129-8dc8-e76ef4769c26
+# ╠═b0e216b3-ba23-429b-bce3-2ad715313138
+# ╠═e5d21f12-a369-493f-b83f-7d88235ff2dc
+# ╠═77007e68-52d2-4836-8732-2c758f64f061
 # ╠═85243d23-6d6f-4175-ab1b-a67d54309c10
 # ╟─c0af1a99-7acf-4f05-8c98-52c3f898391d
-# ╠═1dc81c7c-514a-4af0-a3c2-452ee9f71fd3
 # ╠═3c7f6407-bfc8-480f-922d-b98e5c5a4b69
+# ╠═1dc81c7c-514a-4af0-a3c2-452ee9f71fd3
 # ╠═a0e34f60-e242-43af-87ae-17c9575ad1dc
