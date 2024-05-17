@@ -43,9 +43,6 @@ begin
 	freq_v = saved_values["freq"]
 end;	
 
-# ╔═╡ 0064e75e-ed6b-4fed-a854-326d20edd543
-
-
 # ╔═╡ c96c5652-386b-4129-8dc8-e76ef4769c26
 begin 
 	x = sqrt.(knotes[2:end])
@@ -75,6 +72,46 @@ begin
 	plot(mu_v,a1v',label="")
 	plot!(mu_v,a1v[1,:],label="v0=0",lw=2,c=:black,xlabel="μ",ylabel="a1")
 end	
+
+# ╔═╡ bc07de28-ce71-4b9e-85ab-b14ad8336e3c
+begin
+	plot(v0_v,a0v,label="")
+	plot!(v0_v,a0v[:,161],label="mu="*string(mu_v[161]),lw=2,c=:orange)
+	plot!(v0_v,a0v[:,131],label="mu="*string(mu_v[131]),lw=2,c=:cyan)
+	plot!(v0_v,a0v[:,101],label="mu="*string(mu_v[101]),lw=2,c=:green)
+	plot!(v0_v,a0v[:,71],label="mu="*string(mu_v[71]),lw=2,c=:red)
+	plot!(v0_v,a0v[:,41],label="mu="*string(mu_v[41]),lw=2,c=:blue,xlabel="v0",ylabel="a0")
+end	
+
+# ╔═╡ 7c0ff248-cea7-49bd-b0b8-ff57ae860379
+begin
+	plot(v0_v,a1v,label="")
+	plot!(v0_v,a1v[:,161],label="mu="*string(mu_v[161]),lw=2,c=:orange)
+	plot!(v0_v,a1v[:,131],label="mu="*string(mu_v[131]),lw=2,c=:cyan)
+	plot!(v0_v,a1v[:,101],label="mu="*string(mu_v[101]),lw=2,c=:green)
+	plot!(v0_v,a1v[:,71],label="mu="*string(mu_v[71]),lw=2,c=:red)
+	plot!(v0_v,a1v[:,41],label="mu="*string(mu_v[41]),lw=2,c=:blue,xlabel="v0",ylabel="a1")
+end	
+
+# ╔═╡ 13a1a5ca-5b80-4b89-b0f1-38f6e9ee44e6
+f0 = 1.0
+
+# ╔═╡ 68ee1490-50a7-40ea-87c4-bc7663fc5a79
+kcomp = @. ((f0-a0v)/a1v)^2
+
+# ╔═╡ 9da64564-73c9-4e42-b189-003a6c296afd
+begin
+	plot(v0_v,kcomp,label="",c=:gray)
+	plot!(v0_v,kcomp[:,161],label="mu="*string(mu_v[161]),lw=2,c=:orange)
+	plot!(v0_v,kcomp[:,131],label="mu="*string(mu_v[131]),lw=2,c=:cyan)
+	plot!(v0_v,kcomp[:,101],label="mu="*string(mu_v[101]),lw=2,c=:green)
+	plot!(v0_v,kcomp[:,71],label="mu="*string(mu_v[71]),lw=2,c=:red)
+	plot!(v0_v,kcomp[:,41],label="mu="*string(mu_v[41]),lw=2,c=:blue)
+	plot!(v0_v,kcomp[:,11],label="mu="*string(mu_v[11]),lw=2,c=:black,xlabel="v0",ylabel="k")
+end	
+
+# ╔═╡ dc0753f4-1add-4052-87a6-55c765d1a1f4
+
 
 # ╔═╡ c0af1a99-7acf-4f05-8c98-52c3f898391d
 md"""
@@ -135,11 +172,16 @@ input[type*="range"] {
 # ╠═7c2fc40e-979f-4289-9b24-650a7364beac
 # ╠═f667d681-a2c4-4b04-a641-32692df1c5c2
 # ╠═9de8957e-2cab-4f33-a4e8-02932a704022
-# ╠═0064e75e-ed6b-4fed-a854-326d20edd543
 # ╠═c96c5652-386b-4129-8dc8-e76ef4769c26
 # ╠═b0e216b3-ba23-429b-bce3-2ad715313138
 # ╠═e5d21f12-a369-493f-b83f-7d88235ff2dc
 # ╠═77007e68-52d2-4836-8732-2c758f64f061
+# ╠═bc07de28-ce71-4b9e-85ab-b14ad8336e3c
+# ╠═7c0ff248-cea7-49bd-b0b8-ff57ae860379
+# ╠═13a1a5ca-5b80-4b89-b0f1-38f6e9ee44e6
+# ╠═68ee1490-50a7-40ea-87c4-bc7663fc5a79
+# ╠═9da64564-73c9-4e42-b189-003a6c296afd
+# ╠═dc0753f4-1add-4052-87a6-55c765d1a1f4
 # ╠═85243d23-6d6f-4175-ab1b-a67d54309c10
 # ╟─c0af1a99-7acf-4f05-8c98-52c3f898391d
 # ╠═3c7f6407-bfc8-480f-922d-b98e5c5a4b69
