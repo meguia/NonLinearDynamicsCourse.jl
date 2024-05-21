@@ -44,7 +44,7 @@ begin
 end;	
 
 # ╔═╡ 0064e75e-ed6b-4fed-a854-326d20edd543
-
+size(freq_v)
 
 # ╔═╡ c96c5652-386b-4129-8dc8-e76ef4769c26
 begin 
@@ -76,6 +76,31 @@ begin
 	plot!(mu_v,a1v[1,:],label="v0=0",lw=2,c=:black,xlabel="μ",ylabel="a1")
 end	
 
+# ╔═╡ 146e013e-9448-4c89-9900-f5496fef8268
+mu_v[80]
+
+# ╔═╡ 2bb640a1-f234-4ce7-a14a-3e89ae5c8475
+begin
+	plot(v0_v,a0v[:,40]/2.3,label="a0",c=:red)
+	plot!(v0_v,1 .-a1v[:,40],label="a1",c=:black,xlabel="v0")
+end	
+
+# ╔═╡ 4a414373-6810-46d1-a83a-51fc46a388d7
+begin
+	plot(v0_v,a0v[:,1:10:80]/2.3,c=:red)
+end	
+
+# ╔═╡ 85243d23-6d6f-4175-ab1b-a67d54309c10
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	sol3 = solve(ODEProblem(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed]),saveat=0.1)
+	#plot(sol1, idxs=(0,1))
+	plot(sol3, idxs=(0,2))
+	
+end	
+  ╠═╡ =#
+
 # ╔═╡ c0af1a99-7acf-4f05-8c98-52c3f898391d
 md"""
 x0 $(@bind x0_vreed Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
@@ -85,14 +110,6 @@ v0 : $(@bind v0_vreed Slider(-1.5:0.01:2.5,default=-0.1;show_value=true)) \
 k : $(@bind k_vreed Slider(0.1:0.01:3.0,default=-0.1;show_value=true)) \
 tmax : $(@bind tmax_vreed Slider(10:10:300.0,default=10.0;show_value=true)) 
 """
-
-# ╔═╡ 85243d23-6d6f-4175-ab1b-a67d54309c10
-begin
-	sol3 = solve(ODEProblem(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed]),saveat=0.1)
-	#plot(sol1, idxs=(0,1))
-	plot(sol3, idxs=(0,2))
-	
-end	
 
 # ╔═╡ 3c7f6407-bfc8-480f-922d-b98e5c5a4b69
 flux2d_nullclines(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed],npts=41,xlims=[-6,6],ylims=[-1,2],title="Lengüeta (Rayleigh) Modificada")
@@ -140,6 +157,9 @@ input[type*="range"] {
 # ╠═b0e216b3-ba23-429b-bce3-2ad715313138
 # ╠═e5d21f12-a369-493f-b83f-7d88235ff2dc
 # ╠═77007e68-52d2-4836-8732-2c758f64f061
+# ╠═146e013e-9448-4c89-9900-f5496fef8268
+# ╠═2bb640a1-f234-4ce7-a14a-3e89ae5c8475
+# ╠═4a414373-6810-46d1-a83a-51fc46a388d7
 # ╠═85243d23-6d6f-4175-ab1b-a67d54309c10
 # ╟─c0af1a99-7acf-4f05-8c98-52c3f898391d
 # ╠═3c7f6407-bfc8-480f-922d-b98e5c5a4b69
