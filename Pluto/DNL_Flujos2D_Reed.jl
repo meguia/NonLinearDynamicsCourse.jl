@@ -43,9 +43,6 @@ begin
 	freq_v = saved_values["freq"]
 end;	
 
-# ╔═╡ 0064e75e-ed6b-4fed-a854-326d20edd543
-size(freq_v)
-
 # ╔═╡ c96c5652-386b-4129-8dc8-e76ef4769c26
 begin 
 	x = sqrt.(knotes[2:end])
@@ -87,19 +84,54 @@ end
 
 # ╔═╡ 4a414373-6810-46d1-a83a-51fc46a388d7
 begin
-	plot(v0_v,a0v[:,1:10:80]/2.3,c=:red)
+	muidx = 16:5:60
+	plot(v0_v,a0v[:,muidx],c=:red)
+	plot!(v0_v,2.3 .*(1 .-a1v[:,muidx]),c=:black)
+	scatter!(sqrt.(mu_v[muidx]/3),0 .*muidx)
+	plot!(xlabel="v0",ylabel="a0",legend=false,xlims=(0,0.4))
 end	
 
-# ╔═╡ 85243d23-6d6f-4175-ab1b-a67d54309c10
-# ╠═╡ disabled = true
-#=╠═╡
+# ╔═╡ 204712ad-c798-4544-b16e-81619ed55f64
+size(freq_v)
+
+# ╔═╡ 13aeb37d-0f1d-4d83-b6dc-f720dc48d9e0
 begin
-	sol3 = solve(ODEProblem(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed]),saveat=0.1)
-	#plot(sol1, idxs=(0,1))
-	plot(sol3, idxs=(0,2))
-	
+	v0idx = 30
+	kv = 0.25:0.01:4
+	title0 = "Frecuencia en funcion de k para diferentes valores de mu con v0 = "*string(v0_v[v0idx])
+	plt1 = plot(xlabel="k",ylabel="f",title=title0,size=(1000,400))
+	for m in muidx
+		plot!(plt1,kv, (a0v[v0idx,m].+a1v[v0idx,m]*sqrt.(kv)),c=:red,label="")
+		plot!(plt1,kv, (a0v[v0idx,m].+(1.0-a0v[v0idx,m]/2.3)*sqrt.(kv)),c=:black,label="")
+		scatter!(plt1,knotes,freq_v[:,v0idx,m],label=string(mu_v[m]),yaxis=log2,yticks=[0.5,1,2],xticks=[0.25,0.5,1,2,4],ylims=(0.45,2.2))
+	end	
+	plt1
 end	
-  ╠═╡ =#
+
+# ╔═╡ a2e4e348-5153-4dc2-8a09-34f87c0199c3
+begin
+	title1 = "Freq/sqrt(k) en funcion de k para diferentes valores de mu con v0 = "*string(v0_v[v0idx])
+	plt2 = plot(xlabel="k",ylabel="f",title=title1,size=(1000,400))
+	for m in muidx
+		plot!(plt2,kv, (a0v[v0idx,m].+a1v[v0idx,m]*sqrt.(kv))./sqrt.(kv),c=:red,label="")
+		plot!(plt2,kv, (a0v[v0idx,m].+(1.0-a0v[v0idx,m]/2.3)*sqrt.(kv))./sqrt.(kv),c=:black,label="")
+		scatter!(knotes,freq_v[:,v0idx,m]./sqrt.(knotes),label=string(mu_v[m]))
+	end	
+	plt2
+end	
+
+# ╔═╡ ef00f387-2ef4-4e45-8687-cd5860e17f31
+begin
+	m2 = 31
+	title2 ="Freq/sqrt(k) en funcion de k para diferentes valores de v0 con mu = "*string(mu_v[m2])
+	plt3 = plot(xlabel="k",ylabel="f",title=title2,size=(1000,400))
+	for v2 in 1:10:51
+		plot!(plt3,kv, (a0v[v2,m2].+a1v[v2,m2]*sqrt.(kv))./sqrt.(kv),c=:red,label="")
+		plot!(plt3,kv, (a0v[v2,m2].+(1.0-a0v[v2,m2]/2.3)*sqrt.(kv))./sqrt.(kv),c=:black,label="")
+		scatter!(plt3,knotes,freq_v[:,v2,m2]./sqrt.(knotes),label=string(v0_v[v2]))
+	end	
+	plt3
+end	
 
 # ╔═╡ c0af1a99-7acf-4f05-8c98-52c3f898391d
 md"""
@@ -111,8 +143,16 @@ k : $(@bind k_vreed Slider(0.1:0.01:3.0,default=-0.1;show_value=true)) \
 tmax : $(@bind tmax_vreed Slider(10:10:300.0,default=10.0;show_value=true)) 
 """
 
+# ╔═╡ 85243d23-6d6f-4175-ab1b-a67d54309c10
+begin
+	sol3 = solve(ODEProblem(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed]),saveat=0.1)
+	plot(sol3, idxs=(0,1),size=(1000,400))
+	plot!(sol3, idxs=(0,2))
+	
+end	
+
 # ╔═╡ 3c7f6407-bfc8-480f-922d-b98e5c5a4b69
-flux2d_nullclines(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed],npts=41,xlims=[-6,6],ylims=[-1,2],title="Lengüeta (Rayleigh) Modificada")
+flux2d_nullclines(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed],npts=41,xlims=[-6,6],ylims=[-2,2],title="Lengüeta (Rayleigh) Modificada")
 
 # ╔═╡ 1dc81c7c-514a-4af0-a3c2-452ee9f71fd3
 # ╠═╡ disabled = true
@@ -145,6 +185,9 @@ input[type*="range"] {
 </style>
 """
 
+# ╔═╡ 0064e75e-ed6b-4fed-a854-326d20edd543
+size(freq_v)
+
 # ╔═╡ Cell order:
 # ╠═9e372d70-f6af-11ee-10b3-2150e19c755b
 # ╠═27ea9f78-6276-4afd-bbd3-19587a4fd30e
@@ -159,8 +202,13 @@ input[type*="range"] {
 # ╠═146e013e-9448-4c89-9900-f5496fef8268
 # ╠═2bb640a1-f234-4ce7-a14a-3e89ae5c8475
 # ╠═4a414373-6810-46d1-a83a-51fc46a388d7
-# ╠═85243d23-6d6f-4175-ab1b-a67d54309c10
+# ╠═204712ad-c798-4544-b16e-81619ed55f64
+# ╠═13aeb37d-0f1d-4d83-b6dc-f720dc48d9e0
+# ╠═a2e4e348-5153-4dc2-8a09-34f87c0199c3
+# ╠═ef00f387-2ef4-4e45-8687-cd5860e17f31
+# ╟─85243d23-6d6f-4175-ab1b-a67d54309c10
 # ╟─c0af1a99-7acf-4f05-8c98-52c3f898391d
 # ╠═3c7f6407-bfc8-480f-922d-b98e5c5a4b69
 # ╠═1dc81c7c-514a-4af0-a3c2-452ee9f71fd3
 # ╠═a0e34f60-e242-43af-87ae-17c9575ad1dc
+# ╠═0064e75e-ed6b-4fed-a854-326d20edd543
