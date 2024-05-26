@@ -130,20 +130,19 @@ x0 $(@bind x0_vreed Slider(-1.0:0.1:2.0,default=0.1;show_value=true)) \
 y0 $(@bind y0_vreed Slider(-1.0:0.1:1.0,default=0.1;show_value=true)) \
 μ : $(@bind μ_vreed Slider(-0.1:0.01:15.0,default=-0.1;show_value=true)) \
 v0 : $(@bind v0_vreed Slider(-1.5:0.01:2.5,default=-0.1;show_value=true)) \
-k : $(@bind k_vreed Slider(0.1:0.01:3.0,default=1.0;show_value=true)) \
+k : $(@bind k_vreed Slider(0.1:0.01:3.0,default=-0.1;show_value=true)) \
 tmax : $(@bind tmax_vreed Slider(10:10:300.0,default=10.0;show_value=true)) 
 """
 
 # ╔═╡ 85243d23-6d6f-4175-ab1b-a67d54309c10
 begin
-	sol3 = solve(ODEProblem(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed]))
-	#plot(sol3, idxs=(0,1),size=(1000,400))
-	#plot!(sol3, idxs=(0,2))
+	sol3 = solve(ODEProblem(vreed!,[x0_vreed;y0_vreed],tmax_vreed,[μ_vreed , k_vreed, v0_vreed]),saveat=0.02)
+	plot(sol3, idxs=(0,1),size=(1000,400))
+	plot!(sol3, idxs=(0,2))
+	
 end	
 
 # ╔═╡ 1dc81c7c-514a-4af0-a3c2-452ee9f71fd3
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	#esto es para generar la figura del paper
 	sol1 = solve(ODEProblem(vreed!,[-0.1;0],tmax_vreed,[0.1 ,k_vreed, 0]))
@@ -158,7 +157,6 @@ begin
 	savefig(plt_all, "fig2.png")
 	plt_all
 end	
-  ╠═╡ =#
 
 # ╔═╡ a0e34f60-e242-43af-87ae-17c9575ad1dc
 html"""
@@ -704,9 +702,9 @@ version = "4.4.4+1"
 
 [[deps.FastAlmostBandedMatrices]]
 deps = ["ArrayInterface", "ArrayLayouts", "BandedMatrices", "ConcreteStructs", "LazyArrays", "LinearAlgebra", "MatrixFactorizations", "PrecompileTools", "Reexport"]
-git-tree-sha1 = "aee47d984d8eddc4ef5fd6b637e7285a16b1283f"
+git-tree-sha1 = "9dc913faf8552fd09b92a0d7fcc25f1d5609d795"
 uuid = "9d29842c-ecb8-4973-b1e9-a27b1157504e"
-version = "0.1.2"
+version = "0.1.1"
 
 [[deps.FastBroadcast]]
 deps = ["ArrayInterface", "LinearAlgebra", "Polyester", "Static", "StaticArrayInterface", "StrideArraysCore"]
@@ -1453,9 +1451,9 @@ version = "1.6.3"
 
 [[deps.OrdinaryDiffEq]]
 deps = ["ADTypes", "Adapt", "ArrayInterface", "DataStructures", "DiffEqBase", "DocStringExtensions", "EnumX", "ExponentialUtilities", "FastBroadcast", "FastClosures", "FillArrays", "FiniteDiff", "ForwardDiff", "FunctionWrappersWrappers", "IfElse", "InteractiveUtils", "LineSearches", "LinearAlgebra", "LinearSolve", "Logging", "MacroTools", "MuladdMacro", "NonlinearSolve", "Polyester", "PreallocationTools", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLOperators", "SciMLStructures", "SimpleNonlinearSolve", "SimpleUnPack", "SparseArrays", "SparseDiffTools", "StaticArrayInterface", "StaticArrays", "TruncatedStacktraces"]
-git-tree-sha1 = "a4af6d00e3f0682b21d734fccf934566f60be767"
+git-tree-sha1 = "b2cd04c49e8c7c6f705b527898fc843c3aa90605"
 uuid = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
-version = "6.80.0"
+version = "6.78.0"
 
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1605,9 +1603,9 @@ deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [[deps.PtrArrays]]
-git-tree-sha1 = "f011fbb92c4d401059b2212c05c0601b70f8b759"
+git-tree-sha1 = "077664975d750757f30e739c870fbbdc01db7913"
 uuid = "43287f4e-b6f4-7ad1-bb20-aadabca52c3d"
-version = "1.2.0"
+version = "1.1.0"
 
 [[deps.Qt6Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Vulkan_Loader_jll", "Xorg_libSM_jll", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_cursor_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "libinput_jll", "xkbcommon_jll"]
@@ -2457,7 +2455,7 @@ version = "1.4.1+1"
 # ╠═a2e4e348-5153-4dc2-8a09-34f87c0199c3
 # ╠═ef00f387-2ef4-4e45-8687-cd5860e17f31
 # ╠═85243d23-6d6f-4175-ab1b-a67d54309c10
-# ╠═c0af1a99-7acf-4f05-8c98-52c3f898391d
+# ╟─c0af1a99-7acf-4f05-8c98-52c3f898391d
 # ╠═1dc81c7c-514a-4af0-a3c2-452ee9f71fd3
 # ╠═a0e34f60-e242-43af-87ae-17c9575ad1dc
 # ╠═0064e75e-ed6b-4fed-a854-326d20edd543
