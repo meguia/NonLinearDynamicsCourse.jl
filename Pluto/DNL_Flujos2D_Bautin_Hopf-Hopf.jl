@@ -245,8 +245,8 @@ md"""
 μ1 : $(@bind μ1 Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) $sp
 μ2 : $(@bind μ2 Slider(-1.0:0.01:1.0,default=-0.1;show_value=true)) \
 kc : $(@bind kc Slider(0.01:0.01:2.0,default=1.0;show_value=true)) $sp
-c : $(@bind c Slider(0.0:0.01:1.0,default=0.1;show_value=true)) \
-k : $(@bind k2 Slider(0.01:0.01:2.0,default=1.0;show_value=true)) $sp
+c : $(@bind c Slider(0.0:0.01:0.2,default=0.1;show_value=true)) \
+k : $(@bind k2 Slider(0.01:0.01:1.0,default=1.0;show_value=true)) $sp
 σ $(@bind σs Select([1 => "positive", -1 => "negative"]))  $sp $sp $sp
 Coupling $(@bind cs Select([[1,1] => "coupling ++", [-1,-1] => "coupling --", [1,-1] => "coupling +-"])) \
 tmax : $(@bind tmax2 Slider(100:100:3000.0,default=10.0;show_value=true)) 	
@@ -277,9 +277,11 @@ end
 begin
 	temp = solve(ODEProblem(dhopf!, [1.0;0.0;1.0;0.0],500,[μ1,μ2,k1,k2,σ2,c12,c21,-0.1]),alg);
 	sol1 = solve(ODEProblem(dhopf!, temp.u[end],tmax2,[μ1,μ2,k1,k2,σ2,c12,c21,-0.1]),alg);
-	p1b = plot(sol1,idxs=(1,2),arrow=true)
-	p2b = plot(sol1,idxs=(3,4),arrow=true)
-	plot(p1b,p2b,layout=(1,2),size = (900,450),title="Double Hopf")
+	p1a = plot(sol1,idxs=(0,1),label="x1")
+	plot!(p1a,sol1,idxs=(0,3),label="x2",ylabel="x")
+	p1b = plot(sol1,idxs=(1,2),arrow=true,label="(x1,y1)")
+	plot!(p1b,sol1,idxs=(3,4),arrow=true,label="(x2,y2)",xlabel="x",ylabel="y")
+	plot(p1a,p1b,layout=(1,2),size = (900,450),title="Double Hopf")
 end	
 
 # ╔═╡ 32cec679-0d93-4d26-a736-e0e6c1058f89
@@ -2486,9 +2488,9 @@ version = "1.4.1+1"
 # ╠═c8148366-9fab-4ef4-8ac8-0bb6421ce68e
 # ╟─ef53daf7-7d49-4763-8f3c-01aec8a105f1
 # ╠═bdcf36f8-a090-4a8a-a3a3-838defcc5b78
-# ╠═b07e11bc-635f-4ab6-9ec3-b4c89d0347be
-# ╠═944a42df-4696-41f1-bc48-da1adaac122b
-# ╟─12218925-ce5d-4684-9609-5fc2a8d5ff25
+# ╟─b07e11bc-635f-4ab6-9ec3-b4c89d0347be
+# ╟─944a42df-4696-41f1-bc48-da1adaac122b
+# ╠═12218925-ce5d-4684-9609-5fc2a8d5ff25
 # ╠═e01862c2-1794-45f8-9139-6c3f79c1be3c
 # ╟─32cec679-0d93-4d26-a736-e0e6c1058f89
 # ╟─53b50ba4-a968-4b6c-8496-031b5d72f558
